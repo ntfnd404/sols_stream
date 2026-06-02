@@ -1,0 +1,11 @@
+name: signaling
+description: Solana on-chain WebRTC signaling for sols.stream
+version: 0.1.0
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  solana: ^0.32.0+1
+  cryptography: ^2.7.0
+  http: ^1.2.0
