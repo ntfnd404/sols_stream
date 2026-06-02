@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+.claude
+
+# Branch-local AIDD ticket workspaces — local only, never committed
+docs/SS-*/
