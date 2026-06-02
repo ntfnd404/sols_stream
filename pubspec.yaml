@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+    
+  flutter_webrtc: ^1.4.1
+  video_player: ^2.11.1
 
 dev_dependencies:
   flutter_test:
