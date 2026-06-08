@@ -6,21 +6,40 @@ version: 0.1.0+1
 environment:
   sdk: ^3.12.0
 
+workspace:
+  - packages/action_bloc
+  - packages/secure_storage
+  - packages/signaling
+  - packages/solana_wallet
+  - packages/ui_kit
+
 dependencies:
   flutter:
     sdk: flutter
     
-  flutter_webrtc: ^1.4.1
-  video_player: ^2.11.1
-  flutter_secure_storage: ^9.0.0
-  qr_flutter: ^4.1.0
+  flutter_webrtc: 1.4.1
+  video_player: 2.11.1
+  qr_flutter: 4.1.0
+  flutter_bloc: 9.1.1
+  solana: 0.32.0+1
+
+  # packages
+  action_bloc:
+    path: packages/action_bloc
+  secure_storage:
+    path: packages/secure_storage
+  solana_wallet:
+    path: packages/solana_wallet
+  ui_kit:
+    path: packages/ui_kit
   signaling:
     path: packages/signaling
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+    
+  flutter_lints: 6.0.0
 
 flutter:
   uses-material-design: true
