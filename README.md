@@ -11,10 +11,6 @@ sols.stream is a cross-platform streaming platform built on Flutter and WebRTC. 
 - **Call** anyone P2P with video and audio
 - **Join** group calls and rooms
 
-## Status
-
-> **MWP — minimum working product.** Manual WebRTC peer-to-peer signaling and HLS playback are working. Signaling server, group calls, and stream catalog are on the roadmap.
-
 ## What works now
 
 **WebRTC (P2P)**
