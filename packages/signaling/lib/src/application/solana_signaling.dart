@@ -7,6 +7,7 @@ import 'package:signaling/src/application/signal_payload_codec.dart';
 import 'package:signaling/src/application/signaling_chain_gateway.dart';
 import 'package:signaling/src/application/signaling_protocol_constants.dart';
 import 'package:signaling/src/application/signaling_session.dart';
+import 'package:signaling/src/domain/connect_slot_data.dart';
 import 'package:signaling/src/domain/connect_slot_state.dart';
 import 'package:solana_wallet/solana_wallet.dart';
 
@@ -60,20 +61,30 @@ class SolanaSignaling {
   }
 
   Stream<String> watchForAnswer(SignalingSession session) async* {
-    while (true) {
+    for (var i = 0; i < SignalingProtocolConstants.maxAnswerPollAttempts; i++) {
       await Future.delayed(SignalingProtocolConstants.pollInterval);
-      try {
-        final slot = await _chain.fetchSlot(session.slotPda);
-        if (slot == null) continue;
-        if (slot.state == ConnectSlotState.answerReady || slot.state == ConnectSlotState.connected) {
-          yield await _codec.decode(slot.answerData, session.prot, session.slotNonce);
 
-          return;
-        }
+      ConnectSlotData? slot;
+      try {
+        slot = await _chain.fetchSlot(session.slotPda);
       } on Exception {
         continue;
       }
+      if (slot == null) continue;
+
+      if (slot.state == ConnectSlotState.expired) {
+        throw StateError('Connection slot expired before a viewer connected.');
+      }
+      if (slot.state == ConnectSlotState.answerReady || slot.state == ConnectSlotState.connected) {
+        yield await _codec.decode(slot.answerData, session.prot, session.slotNonce);
+
+        return;
+      }
     }
+    throw TimeoutException(
+      'No viewer connected before the slot expired',
+      SignalingProtocolConstants.pollInterval * SignalingProtocolConstants.maxAnswerPollAttempts,
+    );
   }
 
   // ── Viewer ─────────────────────────────────────────────────────────────────
@@ -87,16 +98,29 @@ class SolanaSignaling {
       throw StateError('Wallet not funded. Add SOL to ${_account.address}');
     }
 
-    await _chain.claimSlot(
-      slotPda: addresses.slotPda,
-      roomPda: addresses.roomPda,
-    );
+    final slot = await _chain.fetchSlot(addresses.slotPda);
+    if (slot == null) {
+      throw StateError('Host has not started the broadcast yet. Try again in a moment.');
+    }
+    if (!_isUnclaimed(slot) && !_isClaimedByMe(slot)) {
+      throw StateError('This connection link has already been claimed by another viewer.');
+    }
+    if (_isUnclaimed(slot)) {
+      await _chain.claimSlot(
+        slotPda: addresses.slotPda,
+        roomPda: addresses.roomPda,
+      );
+    }
 
     for (var i = 0; i < SignalingProtocolConstants.maxOfferPollAttempts; i++) {
       await Future.delayed(SignalingProtocolConstants.pollInterval);
-      final slot = await _chain.fetchSlot(addresses.slotPda);
-      if (slot != null && slot.state.index >= ConnectSlotState.offerReady.index) {
-        final sdp = await _codec.decode(slot.offerData, params.prot, params.slotNonce);
+      final polled = await _chain.fetchSlot(addresses.slotPda);
+      if (polled == null) continue;
+      if (polled.state == ConnectSlotState.expired) {
+        throw StateError('Connection slot expired before an offer was published.');
+      }
+      if (_offerAvailable(polled.state)) {
+        final sdp = await _codec.decode(polled.offerData, params.prot, params.slotNonce);
 
         return FetchedOffer(
           sdpOffer: sdp,
@@ -128,5 +152,22 @@ class SolanaSignaling {
     final bytes = _codec.randomBytes(SignalingProtocolConstants.nonceByteLength);
 
     return bytes.buffer.asByteData().getUint64(0, Endian.little) & SignalingProtocolConstants.int64SignBitMask;
+  }
+
+  bool _offerAvailable(ConnectSlotState state) =>
+      state == ConnectSlotState.offerReady ||
+      state == ConnectSlotState.answerReady ||
+      state == ConnectSlotState.connected;
+
+  bool _isUnclaimed(ConnectSlotData slot) => slot.viewer.every((b) => b == 0);
+
+  bool _isClaimedByMe(ConnectSlotData slot) {
+    final me = _account.publicKey.bytes;
+    if (slot.viewer.length != me.length) return false;
+    for (var i = 0; i < me.length; i++) {
+      if (slot.viewer[i] != me[i]) return false;
+    }
+
+    return true;
   }
 }

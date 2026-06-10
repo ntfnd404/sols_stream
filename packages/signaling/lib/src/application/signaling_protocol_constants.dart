@@ -7,6 +7,9 @@ abstract final class SignalingProtocolConstants {
   /// Number of [pollInterval] ticks `fetchOffer` waits before giving up.
   static const int maxOfferPollAttempts = 24;
 
+  /// Number of [pollInterval] ticks `watchForAnswer` waits before giving up.
+  static const int maxAnswerPollAttempts = 24;
+
   /// Byte length of a random u64 nonce (room/slot nonce).
   static const int nonceByteLength = 8;
 
