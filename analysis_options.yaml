@@ -26,6 +26,7 @@ linter:
 
     # Style
     annotate_overrides: true
+    avoid_classes_with_only_static_members: true
     avoid_empty_else: true
     avoid_function_literals_in_foreach_calls: true
     avoid_init_to_null: true

@@ -368,6 +368,21 @@ final class StrategyResult {
 
 Use `List<StrategyResult>` (preserves order) or `Map<String, StrategyResult>` (lookup by name).
 
+### Non-instantiable groupings: functions vs constants class vs static-method class
+
+When a set of related items has no instance state, pick the form by what is actually being grouped — not by habit:
+
+1. **Only named constant values, no behavior** → `abstract final class XxxConstants` with `static const` fields, no constructor.
+   Example: `SignalingProgramConstants`, `SignalCryptoConstants`, `SignalingProtocolConstants`.
+
+2. **Independent stateless functions with no shared private helpers, where a class name would add nothing over the function names** → top-level functions in a focused file.
+   Example: `instruction_builder.dart` (`buildCreateRoom`, `buildOpenConnectSlot`, ...), `borsh_writer.dart` (`bString`, `bVec`).
+
+3. **A cohesive service**: operations share a private helper, or the class name documents a concept the method names don't (a parser, a codec, a crypto service) → `final class Xxx { const Xxx._(); static ... }` (private constructor, `final` to block subclassing).
+   Example: `SignalPayloadCrypto` (encrypt/decrypt share `_deriveKey`), `ConnectSlotAccountParser` (`parse` only makes sense named after what it parses).
+
+Do not add `abstract` to case 3 — the private constructor already makes the class non-instantiable; `abstract` adds nothing once a constructor exists. Do not wrap case 2 in a class merely to satisfy `avoid_classes_with_only_static_members` — the lint accepts an explicit private constructor (case 3) precisely for groupings that earn it.
+
 ### In-house over small external deps
 
 For utility-class candidates under ~250 LOC (mixins, wrapper widgets, small helpers), prefer an **in-house implementation in `lib/core/`** over an external dependency, even when the dep is maintained and stable.
