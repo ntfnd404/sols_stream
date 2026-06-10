@@ -1,5 +1,5 @@
 name: sols_stream
-description: "A new Flutter project."
+description: "Flutter app for live streaming with Solana on-chain signaling."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -22,6 +22,7 @@ dependencies:
   qr_flutter: 4.1.0
   flutter_bloc: 9.1.1
   solana: 0.32.0+1
+  http: 1.6.0
 
   # packages
   action_bloc:

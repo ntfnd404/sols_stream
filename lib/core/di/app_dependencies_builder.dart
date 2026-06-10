@@ -1,4 +1,4 @@
-import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
 import 'package:secure_storage/secure_storage.dart';
 import 'package:signaling/signaling.dart';
 import 'package:solana/solana.dart' show RpcClient;
@@ -41,56 +41,15 @@ final class AppDependenciesBuilder {
   Future<void> _build() async {
     try {
       const secureStorage = SecureStorageImpl();
+      final rpcEnvironment = _environment.rpc;
+      final rpc = RpcClient(rpcEnvironment.url);
+      final airdropRpc = RpcClient(rpcEnvironment.airdropUrl);
+      final httpClient = Client();
 
-      // final keys = KeysAssembly(
-      //   storage: secureStorage,
-      //   network: _environment.network,
-      // );
-
-      // final wallet = WalletAssembly(
-      //   storage: secureStorage,
-      //   remoteDataSource: NodeWalletGatewayImpl(rpcClient: rpcClient),
-      //   addressRemoteDataSource: NodeAddressGatewayImpl(rpcClient: rpcClient),
-      //   bip39Service: keys.bip39Service,
-      //   seedRepository: keys.seedRepository,
-      //   keyDerivationService: keys.keyDerivationService,
-      // );
-
-      // final nodeTxDataSource = NodeTransactionGatewayImpl(rpcClient: rpcClient);
-      // final blockGenDataSource = BlockGenerationGatewayImpl(rpcClient: rpcClient);
-      // final broadcastDataSource = BroadcastGatewayImpl(rpcClient: rpcClient);
-      // final hdSigner = HdTransactionSigner(signTransaction: keys.signTransaction.call);
-
-      // final transaction = TransactionAssembly(
-      //   transactionRemoteDataSource: TransactionHistoryGatewayImpl(rpcClient: rpcClient),
-      //   utxoRemoteDataSource: UtxoGatewayImpl(rpcClient: rpcClient),
-      //   utxoScanDataSource: UtxoScanGatewayImpl(rpcClient: rpcClient),
-      //   broadcastDataSource: broadcastDataSource,
-      //   nodeTransactionDataSource: nodeTxDataSource,
-      //   blockGenerationDataSource: blockGenDataSource,
-      //   addressRepository: wallet.addressRepository,
-      //   coinSelectors: [
-      //     const BranchAndBoundCoinSelector(),
-      //     KnapsackCoinSelector(),
-      //     const SmallestSingleCoinSelector(),
-      //     const FifoCoinSelector(),
-      //     const LifoCoinSelector(),
-      //     const MinimizeInputsCoinSelector(),
-      //     const MinimizeChangeCoinSelector(),
-      //     SingleRandomDrawCoinSelector(),
-      //   ],
-      //   feeEstimator: const P2wpkhFeeEstimator(),
-      //   hdSigner: hdSigner,
-      //   bech32Hrp: _environment.network.bech32Hrp,
-      // );
-
-      final rpc = RpcClient(_environment.rpc.url);
-      final airdropRpc = RpcClient(_environment.rpc.airdropUrl);
-
-      final funder = DevnetWalletFunder(
-        airdropRpc: airdropRpc,
-        http: http.Client(),
-        faucetUri: _environment.rpc.faucetUri,
+      final fundingGateway = AirdropFaucetFundingGateway(
+        rpcClient: airdropRpc,
+        httpClient: httpClient,
+        faucetUri: rpcEnvironment.faucetUri,
         minLamports: _minLamports,
         airdropLamports: _airdropLamports,
       );
@@ -98,7 +57,7 @@ final class AppDependenciesBuilder {
       final wallet = await SolanaWalletAssembly.create(
         storage: secureStorage,
         rpc: rpc,
-        funder: funder,
+        fundingGateway: fundingGateway,
         storageKey: _walletStorageKey,
       );
 
