@@ -9,19 +9,14 @@ import 'package:solana/solana.dart';
 import 'package:solana_wallet/solana_wallet.dart';
 
 /// Solana implementation of [SignalingChainGateway].
+///
+/// Signs via the wallet's [SolanaSigner] port; reads chain accounts via its own
+/// injected [RpcClient] — it does not borrow the wallet's transport.
 final class SolanaSignalingChainGateway implements SignalingChainGateway {
   final SolanaSigner _signer;
+  final RpcClient _reader;
 
-  const SolanaSignalingChainGateway(this._signer);
-
-  @override
-  String get signerAddress => _signer.address;
-
-  @override
-  Future<int> getBalance() => _signer.getBalance();
-
-  @override
-  Future<bool> ensureFunded() => _signer.ensureFunded();
+  const SolanaSignalingChainGateway(this._signer, this._reader);
 
   @override
   Future<SlotAddresses> openSignalingSlot({
@@ -35,6 +30,7 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
     await _signer.signAndSend([
       await buildOpenConnectSlot(host: host, roomPda: roomPda, slotNonce: slotNonce),
     ]);
+
     return SlotAddresses(roomPda: roomPda.toBase58(), slotPda: slotPdaKey.toBase58());
   }
 
@@ -43,6 +39,7 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
     final host = Ed25519HDPublicKey.fromBase58(params.hostAddress);
     final roomPda = await deriveRoomPda(host, params.roomNonce);
     final slotPda = await deriveSlotPda(roomPda, params.slotNonce);
+
     return SlotAddresses(roomPda: roomPda.toBase58(), slotPda: slotPda.toBase58());
   }
 
@@ -70,10 +67,11 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
 
   @override
   Future<ConnectSlotData?> fetchSlot(String slotPda) async {
-    final info = await _signer.rpc.getAccountInfo(slotPda, encoding: Encoding.base64);
+    final info = await _reader.getAccountInfo(slotPda, encoding: Encoding.base64);
     final bin = info.value?.data as BinaryAccountData?;
     final bytes = bin?.data;
     if (bytes == null) return null;
+
     return ConnectSlotAccountParser.parse(Uint8List.fromList(bytes));
   }
 
@@ -108,7 +106,7 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
         scheme: 'sols',
         host: 'connect',
         queryParameters: {
-          'host': _signer.address,
+          'host': _signer.publicKey.toBase58(),
           'rn': roomNonce.toString(),
           'sn': slotNonce.toString(),
           'prot': prot,
@@ -129,6 +127,7 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
     final rn = uri.queryParameters['rn'] ?? '';
     final sn = uri.queryParameters['sn'] ?? '';
     final prot = uri.queryParameters['prot'] ?? '';
+
     return ConnectionParams(
       hostAddress: host,
       roomNonce: int.parse(rn),
