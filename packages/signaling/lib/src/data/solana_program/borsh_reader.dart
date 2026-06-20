@@ -39,6 +39,18 @@ final class BorshReader {
   /// Skips a Borsh `u64` field without decoding it.
   void skipU64() => _offset += _u64Bytes;
 
+  /// Reads a Borsh `u64` field and advances the cursor.
+  ///
+  /// Lamport amounts (deposits) fit comfortably below 2^53, so the returned
+  /// `int` is exact on every platform; only theoretical values above 2^63 would
+  /// wrap, which deposits never reach.
+  int readU64() {
+    final value = ByteData.sublistView(_data, _offset, _offset + _u64Bytes).getUint64(0, Endian.little);
+    _offset += _u64Bytes;
+
+    return value;
+  }
+
   /// Reads a Borsh `i64` field and advances the cursor.
   int readI64() {
     final value = ByteData.sublistView(_data, _offset, _offset + _u64Bytes).getInt64(0, Endian.little);

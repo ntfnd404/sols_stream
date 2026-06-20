@@ -1,11 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:signaling/src/data/solana_program/borsh_reader.dart';
+import 'package:signaling/src/data/solana_program/connect_slot_account.dart';
 import 'package:signaling/src/data/solana_program/signaling_program_constants.dart';
-import 'package:signaling/src/domain/connect_slot_data.dart';
-import 'package:signaling/src/domain/connect_slot_state.dart';
 
-/// Parses a raw Solana ConnectSlot account (Borsh binary) into [ConnectSlotData].
+/// Parses a raw Solana ConnectSlot account (Borsh binary) into the wire DTO
+/// [ConnectSlotAccount]. Stays at the wire boundary — it reads every field
+/// faithfully (incl. deposits and reserved protected keys) but does not validate
+/// or translate to the domain; that is [ConnectSlotMapper]'s job.
 ///
 /// Borsh layout (all little-endian):
 /// [8 disc][32 room][32 host][32 viewer]
@@ -16,36 +18,34 @@ import 'package:signaling/src/domain/connect_slot_state.dart';
 final class ConnectSlotAccountParser {
   const ConnectSlotAccountParser._();
 
-  static ConnectSlotData parse(Uint8List data) {
+  static ConnectSlotAccount parse(Uint8List data) {
     final reader = BorshReader(data, SignalingProgramConstants.discriminatorLength);
 
     final room = reader.readFixed(SignalingProgramConstants.pubkeyLength);
     final host = reader.readFixed(SignalingProgramConstants.pubkeyLength);
     final viewer = reader.readFixed(SignalingProgramConstants.pubkeyLength);
-    reader.skipU64(); // host_deposit
-    reader.skipU64(); // viewer_deposit
+    final hostDeposit = reader.readU64();
+    final viewerDeposit = reader.readU64();
     final hostProtectedKey = reader.readVec();
     final offerData = reader.readVec();
     final viewerProtectedKey = reader.readVec();
     final answerData = reader.readVec();
-    final rawStateIdx = reader.readU8();
-    if (rawStateIdx >= ConnectSlotState.values.length) {
-      throw FormatException('Unknown ConnectSlotState index: $rawStateIdx');
-    }
-    final stateIdx = rawStateIdx;
+    final stateIndex = reader.readU8();
     final createdAt = reader.readI64();
     final expiresAt = reader.readI64();
     final bump = reader.readU8();
 
-    return ConnectSlotData(
+    return ConnectSlotAccount(
       room: room,
       host: host,
       viewer: viewer,
+      hostDeposit: hostDeposit,
+      viewerDeposit: viewerDeposit,
       hostProtectedKey: hostProtectedKey,
       offerData: offerData,
       viewerProtectedKey: viewerProtectedKey,
       answerData: answerData,
-      state: ConnectSlotState.values[stateIdx],
+      stateIndex: stateIndex,
       createdAt: createdAt,
       expiresAt: expiresAt,
       bump: bump,

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:signaling/src/data/solana_program/borsh_writer.dart';
 import 'package:signaling/src/data/solana_program/signaling_program_constants.dart';
+import 'package:signaling/src/domain/room_creation_params.dart';
 import 'package:solana/encoder.dart';
 import 'package:solana/solana.dart';
 
@@ -40,18 +41,19 @@ Future<Ed25519HDPublicKey> _deriveUserPda(Ed25519HDPublicKey host) => Ed25519HDP
 Future<Instruction> buildCreateRoom({
   required Ed25519HDPublicKey host,
   required int roomNonce,
+  RoomCreationParams params = const RoomCreationParams.p2pFree(),
 }) async {
   final roomPda = await deriveRoomPda(host, roomNonce);
   final userPda = await _deriveUserPda(host);
 
   final data = ByteArray.merge([
     ByteArray(SignalingProgramConstants.discCreateRoom),
-    bString('p2p'), // title
-    ByteArray.u8(0), // category: General
-    ByteArray.u8(0), // access_mode: Public
-    ByteArray.u8(1), // connection_mode: P2P
-    ByteArray.u64(0), // price_per_minute
-    ByteArray.u64(0), // price_per_session
+    bString(params.title),
+    ByteArray.u8(params.category),
+    ByteArray.u8(params.accessMode),
+    ByteArray.u8(params.connectionMode),
+    ByteArray.u64(params.pricePerMinute),
+    ByteArray.u64(params.pricePerSession),
     ByteArray.u64(SignalingProgramConstants.depositLamports),
     ByteArray.u64(roomNonce),
   ]);

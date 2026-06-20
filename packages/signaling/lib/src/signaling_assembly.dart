@@ -17,6 +17,9 @@ final class SignalingAssembly {
     final SignalingChainGateway chain = SolanaSignalingChainGateway(signer, reader);
     const SignalPayloadCodec codec = AesGcmSignalPayloadCodec();
 
+    // `reclaim` is left at its default Null Object (UnsupportedSignalingReclaimGateway):
+    // the program's close/reclaim instructions are not yet known (need the IDL).
+    // Wire a real SignalingReclaimGateway here once they are.
     return SignalingAssembly._(
       signaling: SolanaSignaling(
         chain: chain,

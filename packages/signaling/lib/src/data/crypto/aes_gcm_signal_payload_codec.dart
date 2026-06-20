@@ -10,17 +10,17 @@ final class AesGcmSignalPayloadCodec implements SignalPayloadCodec {
   const AesGcmSignalPayloadCodec();
 
   @override
-  Future<Uint8List> encode(String sdpJson, String prot, int slotNonce) async {
-    final payload = await SignalPayloadCrypto.encryptSdp(sdpJson, prot, slotNonce);
+  Future<Uint8List> encode(String sdpJson, String prot, int slotNonce, String messageType) async {
+    final payload = await SignalPayloadCrypto.encryptSdp(sdpJson, prot, slotNonce, messageType);
 
     return payload.bytes;
   }
 
   @override
-  Future<String> decode(Uint8List bytes, String prot, int slotNonce) {
+  Future<String> decode(Uint8List bytes, String prot, int slotNonce, String messageType) {
     final enc = EncryptedPayload.fromBytes(bytes);
 
-    return SignalPayloadCrypto.decryptSdp(enc, prot, slotNonce);
+    return SignalPayloadCrypto.decryptSdp(enc, prot, slotNonce, messageType);
   }
 
   @override

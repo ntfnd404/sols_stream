@@ -2,8 +2,10 @@ import 'dart:typed_data';
 
 import 'package:signaling/src/application/signaling_chain_gateway.dart';
 import 'package:signaling/src/data/solana_program/connect_slot_account_parser.dart';
+import 'package:signaling/src/data/solana_program/connect_slot_mapper.dart';
 import 'package:signaling/src/data/solana_program/instruction_builder.dart';
 import 'package:signaling/src/domain/connect_slot_data.dart';
+import 'package:signaling/src/domain/room_creation_params.dart';
 import 'package:solana/dto.dart' show BinaryAccountData, Encoding;
 import 'package:solana/solana.dart';
 import 'package:solana_wallet/solana_wallet.dart';
@@ -22,12 +24,17 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
   Future<SlotAddresses> openSignalingSlot({
     required int roomNonce,
     required int slotNonce,
+    RoomCreationParams room = const RoomCreationParams.p2pFree(),
   }) async {
     final host = _signer.publicKey;
-    await _signer.signAndSend([await buildCreateRoom(host: host, roomNonce: roomNonce)]);
     final roomPda = await deriveRoomPda(host, roomNonce);
     final slotPdaKey = await deriveSlotPda(roomPda, slotNonce);
+
+    // create_room + open_slot in ONE atomic transaction: PDAs derive purely, so
+    // instruction order guarantees create_room executes first, and either both
+    // deposits land or neither does — no room-without-slot leak on failure.
     await _signer.signAndSend([
+      await buildCreateRoom(host: host, roomNonce: roomNonce, params: room),
       await buildOpenConnectSlot(host: host, roomPda: roomPda, slotNonce: slotNonce),
     ]);
 
@@ -72,7 +79,9 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
     final bytes = bin?.data;
     if (bytes == null) return null;
 
-    return ConnectSlotAccountParser.parse(Uint8List.fromList(bytes));
+    final account = ConnectSlotAccountParser.parse(Uint8List.fromList(bytes));
+
+    return ConnectSlotMapper.toDomain(account);
   }
 
   @override
@@ -94,45 +103,5 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
         slotPda: Ed25519HDPublicKey.fromBase58(slotPda),
       ),
     ]);
-  }
-
-  @override
-  String buildConnectionUrl({
-    required int roomNonce,
-    required int slotNonce,
-    required String prot,
-  }) =>
-      Uri(
-        scheme: 'sols',
-        host: 'connect',
-        queryParameters: {
-          'host': _signer.publicKey.toBase58(),
-          'rn': roomNonce.toString(),
-          'sn': slotNonce.toString(),
-          'prot': prot,
-          'mode': 'p2p',
-        },
-      ).toString();
-
-  @override
-  ConnectionParams parseConnectionUrl(String url) {
-    final uri = Uri.parse(url);
-    for (final name in ['host', 'rn', 'sn', 'prot']) {
-      final value = uri.queryParameters[name];
-      if (value == null || value.isEmpty) {
-        throw FormatException('Missing required connection URL parameter: $name');
-      }
-    }
-    final host = uri.queryParameters['host'] ?? '';
-    final rn = uri.queryParameters['rn'] ?? '';
-    final sn = uri.queryParameters['sn'] ?? '';
-    final prot = uri.queryParameters['prot'] ?? '';
-
-    return ConnectionParams(
-      hostAddress: host,
-      roomNonce: int.parse(rn),
-      slotNonce: int.parse(sn),
-      prot: prot,
-    );
   }
 }

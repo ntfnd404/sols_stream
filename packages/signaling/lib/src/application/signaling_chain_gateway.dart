@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:signaling/src/domain/connect_slot_data.dart';
+import 'package:signaling/src/domain/room_creation_params.dart';
 
 /// Gateway to the Solana on-chain signaling program.
 ///
@@ -11,10 +12,12 @@ import 'package:signaling/src/domain/connect_slot_data.dart';
 /// funding, address) belong to the wallet context's `WalletAccount` port, not
 /// here.
 abstract interface class SignalingChainGateway {
-  /// Creates room + slot on-chain and returns their PDA addresses.
+  /// Creates room + slot on-chain and returns their PDA addresses. [room]
+  /// configures the room (defaults to a public, free, P2P room).
   Future<SlotAddresses> openSignalingSlot({
     required int roomNonce,
     required int slotNonce,
+    RoomCreationParams room = const RoomCreationParams.p2pFree(),
   });
 
   /// Derives slot addresses from a remote host's connection parameters.
@@ -38,16 +41,6 @@ abstract interface class SignalingChainGateway {
   );
 
   Future<void> confirmConnection(String slotPda);
-
-  /// Builds the shareable `sols://` connection URL.
-  String buildConnectionUrl({
-    required int roomNonce,
-    required int slotNonce,
-    required String prot,
-  });
-
-  /// Parses a `sols://` URL. Throws [FormatException] if a required param is missing.
-  ConnectionParams parseConnectionUrl(String url);
 }
 
 /// Slot addresses after opening or resolving a signaling slot.

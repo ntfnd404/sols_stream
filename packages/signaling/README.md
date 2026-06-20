@@ -32,11 +32,77 @@ await signaling.confirmConnection(slotPda);
 ## Layer structure
 
 ```
-domain/        — ConnectSlotData (Value Object), ConnectSlotState (Enum)
-application/   — SolanaSignaling (Use Case), SignalingSession, FetchedOffer (Output DTOs)
+domain/        — ConnectSlotData, ConnectSlotState, RoomCreationParams (Value Objects)
+application/   — SolanaSignaling (Use Case), SignalingSession, FetchedOffer (Output DTOs),
+                 SignalingChainGateway + SignalingReclaimGateway (ports), ConnectionUrlCodec
 data/crypto/         — EncryptedPayload DTO, SignalPayloadCrypto (AES-GCM/PBKDF2)
-data/solana_program/ — InstructionBuilder, ConnectSlotAccountParser (Borsh)
+data/solana_program/ — InstructionBuilder, ConnectSlotAccountParser (Borsh) →
+                       ConnectSlotAccount (wire DTO) → ConnectSlotMapper → domain
 ```
+
+The on-chain account crosses an **Anti-Corruption boundary**: the parser reads the
+raw Borsh layout into the wire DTO `ConnectSlotAccount` (every field, incl.
+deposits and the reserved protected keys), and `ConnectSlotMapper` translates it
+into the slim domain `ConnectSlotData`. The domain never sees Borsh, the PDA
+`bump`, or always-empty reserved fields.
+
+## Funds & deposits
+
+Each session deposits SOL on-chain (anti-spam / account rent):
+
+- **Host** pays `0.001 SOL` for the room + `0.001 SOL` for the slot (`0.002` total).
+- **Each viewer** pays `0.001 SOL` when claiming the slot.
+
+**Atomicity.** `create_room` + `open_slot` are sent as **one atomic transaction**,
+so the host never ends up with a paid-for room but no slot — either both deposits
+land or neither does.
+
+**Reclaim seam.** Reclaim is modelled as a dedicated port,
+`SignalingReclaimGateway` (`closeSlot` / `closeRoom`), injected into
+`SolanaSignaling`. On a `goLive` that opens a slot but then fails (e.g. the offer
+write), the use case runs a best-effort **compensation** step against this port.
+
+⚠️ **Reclaim is a no-op until the program IDL is wired.** The default binding is
+the `UnsupportedSignalingReclaimGateway` Null Object, because the program's
+close/reclaim instruction set is **not yet known** (needs the IDL). Two open
+questions decide the final shape (see `docs/project/vision.md`):
+
+1. Does the program **auto-refund** room/slot deposits at `expiresInSec` (120s)?
+   If so, the Null Object is the permanent, correct binding — nothing to reclaim.
+2. If not, an explicit `close_slot` / `close_room` instruction (disc + accounts
+   from the IDL) is wired into a real `SignalingReclaimGateway`, and a persisted
+   reclaim ledger is added so abandoned deposits survive app restarts.
+
+Until then, on **devnet** the wallet auto-airdrops on a low balance
+(see `solana_wallet`); on **mainnet** the atomic transaction above bounds the
+exposure to a slot whose offer write fails after opening.
+
+## Room economics (single mode today)
+
+`create_room` carries `access_mode`, `connection_mode`, `price_per_minute`, and
+`price_per_session`. The app currently creates only **public, free, P2P** rooms,
+centralised in `RoomCreationParams.p2pFree()`. Paid / access-controlled / non-P2P
+rooms (and the on-chain `protected_key` access fields, left empty today) are the
+**monetization roadmap** — see `docs/project/vision.md`. This package will not
+grow that logic until that ticket lands.
+
+## Security model
+
+The `prot` field in the `sols://` connection URL is a 32-byte random
+capability key. **Possession of a full `sols://` URL — specifically the `prot`
+query parameter — is sufficient to decrypt and answer a signaling slot.**
+
+Threat surface:
+
+- The URL must be shared out-of-band (QR code, clipboard, deep link). Any
+  channel that logs or caches full URIs can expose `prot`.
+- The app must not pass a `sols://` URL to analytics, crash reporters, or URL
+  shorteners unless the `prot` component is stripped first.
+- `prot` is bound to a single slot via PBKDF2 (`prot + slotNonce`) and scoped
+  further by a message-type tag in the AAD (`slotNonce:offer` or
+  `slotNonce:answer`), so an offer ciphertext cannot be replayed as an answer.
+- Slot expiry (`expiresAt`) limits the replay window; after expiry the on-chain
+  account is closed and the key material is worthless.
 
 ## Intentionally out of scope
 
