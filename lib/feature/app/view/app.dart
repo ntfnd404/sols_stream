@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:sols_stream/core/routing/app_route_config.dart';
-import 'package:sols_stream/core/routing/app_route_information_parser.dart';
-import 'package:sols_stream/core/routing/app_router_delegate.dart';
-import 'package:sols_stream/core/routing/app_routs_state.dart';
+
+import 'package:rolter/rolter.dart';
+import 'package:sols_stream/feature/app/lock/lock_controller.dart';
+import 'package:sols_stream/feature/app/lock/lock_scope.dart';
+import 'package:sols_stream/feature/app/routing/app_navigator.dart';
+import 'package:sols_stream/feature/app/routing/app_route_registry.dart';
+import 'package:sols_stream/feature/app/routing/lock_guard.dart';
+import 'package:sols_stream/feature/app/routing/routes/app_route.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 /// Root application widget.
 ///
-/// [AppScope] must be placed above this widget in the tree so that
-/// [AppRouterDelegate] and all feature screens can access [AppDependencies].
+/// [AppScope] is placed above this widget (in `main`) so the routing delegate
+/// and every screen can read `AppDependencies`. This widget places
+/// `NavigatorScope` and `LockScope` ABOVE `MaterialApp.router` (C5) so
+/// `context.navigator` and the lock state work in every `buildPage` and screen.
 class App extends StatefulWidget {
   const App({super.key});
 
@@ -22,48 +28,53 @@ class _AppState extends State<App> {
   static final ThemeData _lightTheme = AppTheme.fromVariant(const LightThemeVariant());
   static final ThemeData _darkTheme = AppTheme.fromVariant(const DarkThemeVariant());
 
-  late final AppRoutsState _appRoutsState;
-  late final AppRouterDelegate _routerDelegate;
-  late final AppRouteInformationParser _routeInformationParser;
-  late final Router<AppRouteConfig> _router;
+  late final LockController _lock;
+  late final LockGuard _lockGuard;
+  late final RoutesState<AppRoute> _state;
+  late final AppNavigator _navigator;
+  late final RoutingDelegate<AppRoute> _delegate;
+  late final RoutingInformationParser<AppRoute> _parser;
 
   @override
   void initState() {
     super.initState();
-
-    _appRoutsState = AppRoutsState();
-    _routerDelegate = AppRouterDelegate(_appRoutsState);
-    _routeInformationParser = AppRouteInformationParser();
-    _router = Router<AppRouteConfig>(
-      routerDelegate: _routerDelegate,
-      routeInformationParser: _routeInformationParser,
+    _lock = LockController();
+    _lockGuard = LockGuard(_lock);
+    final pipeline = GuardedPipeline<AppRoute>(
+      guards: <RouteGuard<AppRoute>>[_lockGuard],
+      normalize: normalizeAppStack,
+      currentStack: () => _state.root,
     );
+    _state = RoutesState<AppRoute>(const <AppRoute>[HubRoute()], pipeline.call);
+    pipeline.refresh.addListener(_state.reevaluate);
+    _navigator = AppNavigator(_state);
+    _delegate = RoutingDelegate<AppRoute>(_state);
+    _parser = RoutingInformationParser<AppRoute>(TreeUrlCodec<AppRoute>(appRouteRegistry));
   }
 
   @override
   void dispose() {
-    _routerDelegate.dispose();
+    _delegate.dispose();
+    _state.dispose();
+    _lockGuard.dispose();
+    _lock.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp.router(
-    debugShowCheckedModeBanner: false,
-    title: 'Sols Stream',
-    routerDelegate: _routerDelegate,
-    routeInformationParser: _routeInformationParser,
-    // routerConfig: _router,
-    theme: _lightTheme,
-    darkTheme: _darkTheme,
-    builder: AppTheme.builder,
+  Widget build(BuildContext context) => LockScope(
+    controller: _lock,
+    child: NavigatorScope<AppNavigator>(
+      navigator: _navigator,
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        title: 'Sols Stream',
+        routerDelegate: _delegate,
+        routeInformationParser: _parser,
+        theme: _lightTheme,
+        darkTheme: _darkTheme,
+        builder: AppTheme.builder,
+      ),
+    ),
   );
 }
-
-// final appState = AppState();
-// final routerDelegate = AppRouterDelegate(appState);
-// final routeInformationParser = AppRouteInformationParser();
-
-// final router = Router<AppRouteConfig>(
-//   routerDelegate: routerDelegate,
-//   routeInformationParser: routeInformationParser,
-// );

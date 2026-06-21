@@ -35,6 +35,10 @@ dependencies:
     path: packages/ui_kit
   signaling:
     path: packages/signaling
+  rolter:
+    git:
+      url: https://github.com/ntfnd404/rolter
+      ref: v0.0.1
 
 dev_dependencies:
   flutter_test:
