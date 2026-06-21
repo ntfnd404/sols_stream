@@ -36,9 +36,6 @@ final class BorshReader {
     return readFixed(length);
   }
 
-  /// Skips a Borsh `u64` field without decoding it.
-  void skipU64() => _offset += _u64Bytes;
-
   /// Reads a Borsh `u64` field and advances the cursor.
   ///
   /// Lamport amounts (deposits) fit comfortably below 2^53, so the returned

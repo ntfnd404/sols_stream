@@ -31,18 +31,21 @@ class ConnectionUrlCodec {
   /// is missing.
   ConnectionParams parse(String url) {
     final uri = Uri.parse(url);
-    for (final name in ['host', 'rn', 'sn', 'prot']) {
+
+    String required(String name) {
       final value = uri.queryParameters[name];
       if (value == null || value.isEmpty) {
         throw FormatException('Missing required connection URL parameter: $name');
       }
+
+      return value;
     }
 
     return ConnectionParams(
-      hostAddress: uri.queryParameters['host']!,
-      roomNonce: int.parse(uri.queryParameters['rn']!),
-      slotNonce: int.parse(uri.queryParameters['sn']!),
-      prot: uri.queryParameters['prot']!,
+      hostAddress: required('host'),
+      roomNonce: int.parse(required('rn')),
+      slotNonce: int.parse(required('sn')),
+      prot: required('prot'),
     );
   }
 }
