@@ -30,10 +30,12 @@ import 'package:ui_kit/src/theme/typography_theme.dart';
 /// final class SolarThemeVariant extends ThemeVariant { … }
 /// AppTheme.fromVariant(const SolarThemeVariant())
 /// ```
-abstract final class AppTheme {
+final class AppTheme {
   /// [TransitionBuilder] for [MaterialApp.builder]. Static method reference —
   /// not a getter-closure — so [MaterialApp] sees a stable [Function].
   static TransitionBuilder get builder => _buildScope;
+
+  const AppTheme._();
 
   /// Assembles [ThemeData] from [variant]. Never needs modification regardless
   /// of how many [ThemeVariant] implementations exist.
@@ -66,7 +68,7 @@ abstract final class AppTheme {
           error: colorData.error,
           // onPrimary / onError / secondary / tertiary: left to fromSeed
           // (contrast-aware). The primary CTA sets its own colors via
-          // FilledButtonThemeBuilder.
+          // buildFilledButtonTheme.
         );
 
     final textTheme = TextTheme(
@@ -92,10 +94,10 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: colorData.bgScaffold,
       useMaterial3: true,
       extensions: [colorData, typographyData],
-      cardTheme: CardThemeBuilder.build(colorData),
-      filledButtonTheme: FilledButtonThemeBuilder.build(colorData),
-      outlinedButtonTheme: OutlinedButtonThemeBuilder.build(colorData),
-      inputDecorationTheme: InputDecorationThemeBuilder.build(colorData),
+      cardTheme: buildCardTheme(colorData),
+      filledButtonTheme: buildFilledButtonTheme(colorData),
+      outlinedButtonTheme: buildOutlinedButtonTheme(colorData),
+      inputDecorationTheme: buildInputDecorationTheme(colorData),
     );
   }
 
