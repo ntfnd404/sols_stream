@@ -22,6 +22,7 @@ final class BorshReader {
 
   /// Reads [length] raw bytes and advances the cursor.
   Uint8List readFixed(int length) {
+    _require(length);
     final bytes = _data.sublist(_offset, _offset + length);
     _offset += length;
 
@@ -30,6 +31,7 @@ final class BorshReader {
 
   /// Reads a Borsh `Vec<u8>`: u32 length prefix followed by that many bytes.
   Uint8List readVec() {
+    _require(_lengthPrefixBytes);
     final length = ByteData.sublistView(_data, _offset, _offset + _lengthPrefixBytes).getUint32(0, Endian.little);
     _offset += _lengthPrefixBytes;
 
@@ -42,6 +44,7 @@ final class BorshReader {
   /// `int` is exact on every platform; only theoretical values above 2^63 would
   /// wrap, which deposits never reach.
   int readU64() {
+    _require(_u64Bytes);
     final value = ByteData.sublistView(_data, _offset, _offset + _u64Bytes).getUint64(0, Endian.little);
     _offset += _u64Bytes;
 
@@ -50,6 +53,7 @@ final class BorshReader {
 
   /// Reads a Borsh `i64` field and advances the cursor.
   int readI64() {
+    _require(_u64Bytes);
     final value = ByteData.sublistView(_data, _offset, _offset + _u64Bytes).getInt64(0, Endian.little);
     _offset += _u64Bytes;
 
@@ -57,5 +61,21 @@ final class BorshReader {
   }
 
   /// Reads a single byte and advances the cursor.
-  int readU8() => _data[_offset++];
+  int readU8() {
+    _require(1);
+
+    return _data[_offset++];
+  }
+
+  /// Guards a read of [bytes] against a truncated/malformed buffer. Throws a
+  /// typed [FormatException] (an `Exception`, not a `RangeError`) so the
+  /// application's `on Exception` poll guards treat a bad on-chain account as a
+  /// transient read rather than crashing the session.
+  void _require(int bytes) {
+    if (_offset + bytes > _data.length) {
+      throw FormatException(
+        'Borsh read out of bounds: need $bytes byte(s) at offset $_offset of ${_data.length}',
+      );
+    }
+  }
 }

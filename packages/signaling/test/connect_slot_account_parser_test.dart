@@ -85,5 +85,15 @@ void main() {
 
       expect(account.stateIndex, 99);
     });
+
+    test('throws FormatException (not RangeError) on a truncated buffer', () {
+      final full = _account(stateIdx: ConnectSlotState.offerReady.index);
+      final truncated = full.sublist(0, full.length - 10);
+
+      expect(
+        () => ConnectSlotAccountParser.parse(truncated),
+        throwsFormatException,
+      );
+    });
   });
 }

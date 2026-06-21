@@ -144,7 +144,13 @@ class SolanaSignaling {
 
     for (var i = 0; i < _maxOfferPollAttempts; i++) {
       await Future.delayed(_pollInterval);
-      final polled = await _chain.fetchSlot(addresses.slotPda);
+
+      ConnectSlotData? polled;
+      try {
+        polled = await _chain.fetchSlot(addresses.slotPda);
+      } on Exception {
+        continue; // transient RPC/parse error (e.g. account mid-write) — retry
+      }
       if (polled == null) continue;
       if (polled.state == ConnectSlotState.expired) {
         throw StateError('Connection slot expired before an offer was published.');
