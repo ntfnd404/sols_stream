@@ -1,0 +1,1 @@
+enum TransportMode { webrtc, hls }

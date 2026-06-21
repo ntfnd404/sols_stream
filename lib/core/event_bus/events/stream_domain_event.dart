@@ -25,8 +25,12 @@ final class PeerDisconnectedEvent extends StreamDomainEvent {
 }
 
 /// Emitted after a stream session is created and can be shared.
+///
+/// Intentionally carries no payload: the shareable `sols://` URL embeds the
+/// `prot` capability key (full decrypt/answer access), so it must never travel
+/// through the event bus where a logging/analytics observer could capture it.
+/// The URL stays local to the publisher screen; consumers needing a safe handle
+/// should reference the on-chain slot address instead.
 final class StreamStartedEvent extends StreamDomainEvent {
-  final String connectionUrl;
-
-  const StreamStartedEvent(this.connectionUrl);
+  const StreamStartedEvent();
 }
