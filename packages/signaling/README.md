@@ -29,6 +29,25 @@ await signaling.confirmConnection(slotPda);
 | `solana` | RPC client, transaction types, PDA derivation |
 | `cryptography` | AES-GCM + PBKDF2 for SDP payload protection |
 
+## Source of truth & re-sync
+
+There is **no Anchor IDL** in the repo. The on-chain program's instruction and
+account discriminators and the custom-error map (`SOLS_ERROR_NAMES`) are
+transcribed from the production web client `program-client.js` into
+`SignalingProgramConstants` and `SolanaErrorCodes` (one place each). The contract
+is **still in development**, so the client ships new versions periodically.
+
+- **Captured source:** `packages/signaling/reference/program-client.js`
+  — from `https://p2p.sols.stream/ipfs/<CID>/program-client.js`. The IPFS **CID is
+  the version** (immutable content hash); a contract update yields a new CID.
+- **Current capture:** CID `bafybeiabqt3ptjgc6c7u62rzf72mwlsmk6g7sd3ah7ykedlkkiqcxtkf5q`,
+  2026-06-21, sha256 `1191815b8df70204f8641061bcae2aaa6605ea0b7e1e073021125d10cc1a6b9e`.
+- **Re-sync workflow:** drop the new `program-client.js` over the captured copy →
+  `git diff` to see what changed → re-validate the affected discriminators (each
+  also equals the Anchor sighash `sha256("global:"+ix)[:8]`) and the error map →
+  edit `signaling_program_constants.dart` / `solana_error_codes.dart` → bump the
+  CID/hash/date here and in the constants header.
+
 ## Layer structure
 
 ```
