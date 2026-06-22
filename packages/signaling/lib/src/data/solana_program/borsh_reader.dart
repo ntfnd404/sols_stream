@@ -9,11 +9,22 @@ final class BorshReader {
   /// Length, in bytes, of a Borsh `u64`/`i64` field.
   static const int _u64Bytes = 8;
 
+  /// `2^63` — the sign bit of a 64-bit two's-complement integer.
+  static final BigInt _signBit = BigInt.one << 63;
+
+  /// `2^64` — used to map an unsigned 64-bit value into its signed range.
+  static final BigInt _twoPow64 = BigInt.one << 64;
+
   final Uint8List _data;
   int _offset;
 
   /// Current read position, in bytes.
   int get offset => _offset;
+
+  /// Bytes left between the cursor and the end of the buffer. Used to detect
+  /// optional appended fields (e.g. an account written before a layout upgrade
+  /// lacks the trailing fields) before attempting to read them.
+  int get remaining => _data.length - _offset;
 
   BorshReader(
     this._data, [
@@ -38,26 +49,30 @@ final class BorshReader {
     return readFixed(length);
   }
 
-  /// Reads a Borsh `u64` field and advances the cursor.
+  /// Reads a little-endian Borsh `u64` field as a [BigInt] and advances the
+  /// cursor.
   ///
-  /// Lamport amounts (deposits) fit comfortably below 2^53, so the returned
-  /// `int` is exact on every platform; only theoretical values above 2^63 would
-  /// wrap, which deposits never reach.
-  int readU64() {
+  /// Assembled byte-by-byte rather than via `ByteData.getUint64`, which throws
+  /// `UnsupportedError` on the web (JS has no native 64-bit integer). [BigInt]
+  /// is exact across the full `u64` range on every platform.
+  BigInt readU64() {
     _require(_u64Bytes);
-    final value = ByteData.sublistView(_data, _offset, _offset + _u64Bytes).getUint64(0, Endian.little);
+    var value = BigInt.zero;
+    for (var i = _u64Bytes - 1; i >= 0; i--) {
+      value = (value << 8) | BigInt.from(_data[_offset + i]);
+    }
     _offset += _u64Bytes;
 
     return value;
   }
 
-  /// Reads a Borsh `i64` field and advances the cursor.
-  int readI64() {
-    _require(_u64Bytes);
-    final value = ByteData.sublistView(_data, _offset, _offset + _u64Bytes).getInt64(0, Endian.little);
-    _offset += _u64Bytes;
+  /// Reads a little-endian Borsh `i64` field as a [BigInt] and advances the
+  /// cursor. Reinterprets the unsigned bytes as two's-complement: values with
+  /// the sign bit set map into the negative range.
+  BigInt readI64() {
+    final unsigned = readU64();
 
-    return value;
+    return unsigned >= _signBit ? unsigned - _twoPow64 : unsigned;
   }
 
   /// Reads a single byte and advances the cursor.
@@ -66,6 +81,10 @@ final class BorshReader {
 
     return _data[_offset++];
   }
+
+  /// Reads a Borsh `bool` (one byte; any non-zero value is `true`) and advances
+  /// the cursor.
+  bool readBool() => readU8() != 0;
 
   /// Guards a read of [bytes] against a truncated/malformed buffer. Throws a
   /// typed [FormatException] (an `Exception`, not a `RangeError`) so the

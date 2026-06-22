@@ -17,15 +17,37 @@ class ConnectSlotData {
   final Uint8List offerData;
   final Uint8List answerData;
   final ConnectSlotState state;
-  final int createdAt;
-  final int expiresAt;
+  final BigInt createdAt;
+  final BigInt expiresAt;
 
   /// Lamports the host deposited for room + slot. Surfaced for deposit
   /// accounting / reclaim — see `SignalingReclaimGateway`.
-  final int hostDeposit;
+  final BigInt hostDeposit;
 
   /// Lamports the viewer deposited when claiming the slot.
-  final int viewerDeposit;
+  final BigInt viewerDeposit;
+
+  /// Account-rent lamports the host paid. On close/cleanup this is returned as
+  /// part of a pro-rata distribution over deposits + rent + access price, after
+  /// a 1% skim to the service wallet. Surfaced for reclaim accounting. 0 for
+  /// pre-Upgrade-07 slots.
+  final BigInt hostRentPaid;
+
+  /// Account-rent lamports the viewer paid; see [hostRentPaid].
+  final BigInt viewerRentPaid;
+
+  /// Access price (lamports) snapshotted at claim time; 0 for the free P2P flow.
+  /// Surfaced because it is an input to the same close/cleanup refund math as
+  /// [hostDeposit] and [hostRentPaid].
+  final BigInt accessPrice;
+
+  /// Whether the host has confirmed the WebRTC connection on-chain. 0/false for
+  /// pre-Upgrade-07 slots.
+  final bool hostConfirmed;
+
+  /// Whether the viewer has confirmed the WebRTC connection on-chain; see
+  /// [hostConfirmed].
+  final bool viewerConfirmed;
 
   const ConnectSlotData({
     required this.room,
@@ -38,5 +60,10 @@ class ConnectSlotData {
     required this.expiresAt,
     required this.hostDeposit,
     required this.viewerDeposit,
+    required this.hostRentPaid,
+    required this.viewerRentPaid,
+    required this.accessPrice,
+    required this.hostConfirmed,
+    required this.viewerConfirmed,
   });
 }

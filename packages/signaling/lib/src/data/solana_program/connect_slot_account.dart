@@ -12,8 +12,8 @@ class ConnectSlotAccount {
   final Uint8List room;
   final Uint8List host;
   final Uint8List viewer;
-  final int hostDeposit;
-  final int viewerDeposit;
+  final BigInt hostDeposit;
+  final BigInt viewerDeposit;
 
   /// Host's on-chain per-offer access key. Empty in the P2P flow (the key ships
   /// in the `prot` URL param). Reserved for access-controlled / paid rooms
@@ -29,9 +29,33 @@ class ConnectSlotAccount {
   /// Raw on-chain state index. Resolved to `ConnectSlotState` by the mapper,
   /// which validates the range.
   final int stateIndex;
-  final int createdAt;
-  final int expiresAt;
+  final BigInt createdAt;
+  final BigInt expiresAt;
   final int bump;
+
+  /// Rent (lamports) the host paid to allocate the slot account. On close /
+  /// cleanup the program returns this as part of a pro-rata distribution over
+  /// deposits + rent + access price, after a 1% skim to the service wallet
+  /// (+ a bounty to a third-party caller) — see `reference/program-client.js`
+  /// (`cleanup_expired_slot` / `close_connect_slot`). Part of the Upgrade-07
+  /// appended tail — defaults to 0 for slots written before the upgrade.
+  final BigInt hostRentPaid;
+
+  /// Rent (lamports) the viewer paid; see [hostRentPaid]. Upgrade-07 tail.
+  final BigInt viewerRentPaid;
+
+  /// Access price (lamports) snapshotted at claim time; 0 in the free P2P flow.
+  /// Upgrade-07 tail. An input to the same close/cleanup refund math as the
+  /// deposits and rent, so the mapper surfaces it to the domain.
+  final BigInt accessPrice;
+
+  /// Whether the host has confirmed the WebRTC connection (flips via
+  /// `confirm_connection`). Upgrade-07 tail; defaults to `false` pre-upgrade.
+  final bool hostConfirmed;
+
+  /// Whether the viewer has confirmed the WebRTC connection; see
+  /// [hostConfirmed]. Upgrade-07 tail.
+  final bool viewerConfirmed;
 
   const ConnectSlotAccount({
     required this.room,
@@ -47,5 +71,10 @@ class ConnectSlotAccount {
     required this.createdAt,
     required this.expiresAt,
     required this.bump,
+    required this.hostRentPaid,
+    required this.viewerRentPaid,
+    required this.accessPrice,
+    required this.hostConfirmed,
+    required this.viewerConfirmed,
   });
 }
