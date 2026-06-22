@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:solana/dto.dart' show BalanceResult;
@@ -107,13 +109,16 @@ void main() {
     final ok = await gateway().ensureFunded(account);
 
     expect(ok, isTrue);
-    verify(
+    final captured = verify(
       () => httpClient.post(
         any(),
         headers: any(named: 'headers'),
-        body: any(named: 'body'),
+        body: captureAny(named: 'body'),
       ),
-    ).called(1);
+    ).captured.single;
+    // Pin the faucet contract: it expects {"wallet": "<base58>"} and 400s on any
+    // other field name (e.g. "address"). Regression guard for that exact shape.
+    expect(jsonDecode(captured as String), {'wallet': account.toBase58()});
   });
 
   test('returns false when neither airdrop nor faucet funds', () async {

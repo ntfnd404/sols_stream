@@ -14,8 +14,9 @@ import 'package:solana_wallet/src/domain/funding_gateway.dart';
 /// the account balance until it crosses [_minLamports] or [_fundingTimeout]
 /// elapses. Robust slot-aware backoff is out of scope (tracked in SS-0004).
 ///
-/// The faucet is assumed to accept a JSON body of the shape
-/// `{"address": "<base58 pubkey>"}` and to signal success with a 2xx status.
+/// The faucet accepts a JSON body of the shape `{"wallet": "<base58 pubkey>"}`
+/// and signals success with a 2xx status (verified against
+/// `https://turn.sols.stream/faucet`, which 400s on any other field name).
 final class AirdropFaucetFundingGateway implements FundingGateway {
   final RpcClient _rpcClient;
   final http.Client _httpClient;
@@ -77,7 +78,7 @@ final class AirdropFaucetFundingGateway implements FundingGateway {
           .post(
             _faucetUri,
             headers: const {'Content-Type': 'application/json'},
-            body: jsonEncode({'address': address}),
+            body: jsonEncode({'wallet': address}),
           )
           .timeout(_requestTimeout);
       if (response.statusCode < 200 || response.statusCode >= 300) return false;
