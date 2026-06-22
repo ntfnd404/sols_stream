@@ -10,6 +10,7 @@ import 'package:signaling/src/domain/connect_slot_data.dart';
 import 'package:signaling/src/domain/program_config.dart';
 import 'package:signaling/src/domain/room_creation_params.dart';
 import 'package:solana/dto.dart' show BinaryAccountData, Encoding;
+import 'package:solana/encoder.dart' show Instruction;
 import 'package:solana/solana.dart';
 import 'package:solana_wallet/solana_wallet.dart';
 
@@ -32,6 +33,16 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
     final host = _signer.publicKey;
     final roomPda = await deriveRoomPda(host, roomNonce);
     final slotPdaKey = await deriveSlotPda(roomPda, slotNonce);
+
+    // `create_room` requires the host's User PDA to already exist, else the
+    // program rejects it with AccountNotInitialized (3012). Initialize it once
+    // (first go-live) in its OWN confirmed transaction — the reference client
+    // never bundles create_user with create_room, and bundling them tripped the
+    // program's create_room authorization check. Skipped when already present.
+    final createUserIx = await _ensureHostUserIx(host);
+    if (createUserIx != null) {
+      await _signer.signAndSend([createUserIx]);
+    }
 
     // create_room + open_slot in ONE atomic transaction: PDAs derive purely, so
     // instruction order guarantees create_room executes first, and either both
@@ -120,5 +131,18 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
         slotPda: Ed25519HDPublicKey.fromBase58(slotPda),
       ),
     ]);
+  }
+
+  /// Returns a `create_user` instruction when [host]'s User PDA is not yet
+  /// initialized, or `null` when it already exists. The existence check must be
+  /// reliable (a wrong guess fails the atomic create_room tx — a duplicate
+  /// create_user or a missing host_user both abort it), so a read failure is
+  /// allowed to propagate rather than guessed around.
+  Future<Instruction?> _ensureHostUserIx(Ed25519HDPublicKey host) async {
+    final userPda = await deriveUserPda(host);
+    final info = await _reader.getAccountInfo(userPda.toBase58(), encoding: Encoding.base64);
+    if (info.value != null) return null;
+
+    return buildCreateUser(authority: host);
   }
 }

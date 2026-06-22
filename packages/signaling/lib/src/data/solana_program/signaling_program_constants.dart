@@ -24,6 +24,10 @@ abstract final class SignalingProgramConstants {
   static const String systemProgramId = '11111111111111111111111111111111';
 
   // ── Instruction discriminators (happy-path P2P signaling) ──────────────────
+  /// `create_user` — initializes the host's User PDA (`[b"user", host]`).
+  /// `create_room` requires this account to already exist (else
+  /// `AccountNotInitialized`/3012), so it is sent once before the first room.
+  static const List<int> discCreateUser = [108, 227, 130, 130, 252, 109, 75, 218];
   static const List<int> discCreateRoom = [130, 166, 32, 2, 247, 120, 178, 53];
   static const List<int> discOpenSlot = [200, 199, 43, 201, 133, 53, 221, 183];
   static const List<int> discClaimSlot = [110, 60, 180, 109, 39, 35, 5, 140];
@@ -54,6 +58,11 @@ abstract final class SignalingProgramConstants {
   static const List<int> discRoomAccount = [156, 199, 67, 27, 222, 23, 185, 94];
   static const List<int> discUserAccount = [159, 117, 95, 227, 239, 151, 58, 236];
   static const List<int> discProgramConfigAccount = [196, 210, 90, 231, 144, 149, 140, 63];
+
+  /// Default nickname written when initializing the host User PDA via
+  /// `create_user`. The app has no profile UI yet; kept short to stay under the
+  /// program's `NicknameTooLong` (6000) bound.
+  static const String defaultNickname = 'sols.stream';
 
   /// Lamports deposited when creating a room and opening a connect slot.
   static const int depositLamports = 1000000; // 0.001 SOL

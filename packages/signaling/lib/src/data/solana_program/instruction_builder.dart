@@ -33,10 +33,38 @@ Future<Ed25519HDPublicKey> deriveSlotPda(
   programId: _programId,
 );
 
-Future<Ed25519HDPublicKey> _deriveUserPda(Ed25519HDPublicKey host) => Ed25519HDPublicKey.findProgramAddress(
+/// Derives a wallet's User PDA (seed `[b"user", wallet]`). Public so the chain
+/// gateway can check whether the host's User account exists before `create_room`.
+Future<Ed25519HDPublicKey> deriveUserPda(Ed25519HDPublicKey host) => Ed25519HDPublicKey.findProgramAddress(
   seeds: ['user'.codeUnits, host.bytes],
   programId: _programId,
 );
+
+/// `create_user` — initializes the signer's User PDA. `create_room` (and the
+/// reclaim room ixs) require this account to exist; the program rejects a
+/// `create_room` whose `host_user` is uninitialized with `AccountNotInitialized`
+/// (3012). Sent once, before the host's first room.
+Future<Instruction> buildCreateUser({
+  required Ed25519HDPublicKey authority,
+  String nickname = SignalingProgramConstants.defaultNickname,
+}) async {
+  final userPda = await deriveUserPda(authority);
+
+  final data = ByteArray.merge([
+    ByteArray(SignalingProgramConstants.discCreateUser),
+    bString(nickname),
+  ]);
+
+  return Instruction(
+    programId: _programId,
+    accounts: [
+      AccountMeta.writeable(pubKey: authority, isSigner: true),
+      AccountMeta.writeable(pubKey: userPda, isSigner: false),
+      AccountMeta.readonly(pubKey: _systemProgramId, isSigner: false),
+    ],
+    data: data,
+  );
+}
 
 /// Derives the singleton `ProgramConfig` PDA (seed `[b"config"]`, no extra
 /// seeds). Public so the chain gateway can read `service_wallet` from it.
@@ -51,7 +79,7 @@ Future<Instruction> buildCreateRoom({
   RoomCreationParams params = const RoomCreationParams.p2pFree(),
 }) async {
   final roomPda = await deriveRoomPda(host, roomNonce);
-  final userPda = await _deriveUserPda(host);
+  final userPda = await deriveUserPda(host);
 
   final data = ByteArray.merge([
     ByteArray(SignalingProgramConstants.discCreateRoom),
@@ -224,7 +252,7 @@ Future<Instruction> buildEndRoom({
   required Ed25519HDPublicKey host,
   required Ed25519HDPublicKey roomPda,
 }) async {
-  final userPda = await _deriveUserPda(host);
+  final userPda = await deriveUserPda(host);
 
   return Instruction(
     programId: _programId,
@@ -244,7 +272,7 @@ Future<Instruction> buildCloseRoom({
   required Ed25519HDPublicKey host,
   required Ed25519HDPublicKey roomPda,
 }) async {
-  final userPda = await _deriveUserPda(host);
+  final userPda = await deriveUserPda(host);
 
   return Instruction(
     programId: _programId,
