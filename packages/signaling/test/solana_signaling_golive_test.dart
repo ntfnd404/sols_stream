@@ -26,8 +26,7 @@ void main() {
       expect(session.url, startsWith('sols://connect'));
       expect(session.roomPda, 'ROOM');
       expect(session.slotPda, 'SLOT');
-      expect(reclaim.closedSlots, isEmpty);
-      expect(reclaim.closedRooms, isEmpty);
+      expect(reclaim.calls, isEmpty);
     });
 
     test('compensates by reclaiming deposits when the offer write fails', () async {
@@ -38,8 +37,12 @@ void main() {
       );
 
       await expectLater(signaling.goLive('OFFER'), throwsA(isA<StateError>()));
-      expect(reclaim.closedSlots, ['SLOT']);
+      // Just-opened, never-claimed slot: viewer is null (host placeholder).
+      expect(reclaim.closedSlots, [(slotPda: 'SLOT', viewer: null)]);
+      expect(reclaim.endedRooms, ['ROOM']);
       expect(reclaim.closedRooms, ['ROOM']);
+      // Slot is closed before the room is ended and closed.
+      expect(reclaim.calls, ['closeConnectSlot:SLOT', 'endRoom:ROOM', 'closeRoom:ROOM']);
     });
   });
 }

@@ -1,34 +1,57 @@
-/// Port for reclaiming on-chain deposits left by a slot/room that will never be
-/// used (e.g. `goLive` failed after the deposits landed, or a session expired).
+/// Port for reclaiming on-chain deposits left by a slot/room — the
+/// `close_connect_slot` / `end_room` / `close_room` instructions of the
+/// sols.stream signaling program.
 ///
 /// Segregated from `SignalingChainGateway` (ISP): reclaim is a distinct
-/// capability that most callers never need, and whose on-chain shape depends on
-/// the program IDL — which the client does not yet have. The default binding is
-/// [UnsupportedSignalingReclaimGateway] (Null Object); a real implementation is
-/// wired once the program's close instructions are known.
+/// capability with a money-moving trust boundary (the program skims a mandated
+/// 1% to the on-chain service wallet and refunds the rest pro-rata). The default
+/// binding is [UnsupportedSignalingReclaimGateway] (Null Object); the real
+/// Solana implementation is wired in `SignalingAssembly`.
 ///
-/// On mainnet the deposits are real money, so the application is structured to
-/// call this compensation seam now even though it is a no-op until the IDL lands.
-/// If the program turns out to auto-refund on expiry, the Null Object correctly
-/// models "nothing to reclaim" and stays the permanent binding.
+/// Every method is **best-effort and idempotent**: an already-closed/absent
+/// account completes without throwing, so callers can run reclaim
+/// unconditionally on teardown without leaking exceptions. A residual deposit
+/// (e.g. config unreadable, transient RPC) is left for the program's passive
+/// `cleanup_*` fallback rather than surfaced as an error.
 abstract interface class SignalingReclaimGateway {
-  /// Reclaims the slot deposit and closes the slot account at [slotPda].
-  Future<void> closeSlot(String slotPda);
+  /// Closes a connect slot (`close_connect_slot`): the program skims 1% to the
+  /// service wallet and refunds the rest to host + viewer.
+  ///
+  /// [viewer] is the on-chain viewer's base58 pubkey, or `null` when the slot is
+  /// unclaimed — in which case the implementation substitutes the host as the
+  /// refund placeholder (matching the web client). The `host` is the signer and
+  /// the service wallet is resolved on-chain by the implementation; neither is a
+  /// call-surface parameter (a caller must never be able to redirect the skim).
+  ///
+  /// `close_connect_slot` takes no room account, so [roomPda] is intentionally
+  /// not a parameter (see `reference/program-client.js`).
+  Future<void> closeConnectSlot({
+    required String slotPda,
+    String? viewer,
+  });
 
-  /// Reclaims the room deposit and closes the room account at [roomPda].
-  Future<void> closeRoom(String roomPda);
+  /// Marks the room not-live (`end_room`). Idempotent on already-ended rooms.
+  /// Must precede [closeRoom]. Only the host may call this.
+  Future<void> endRoom({required String roomPda});
+
+  /// Reclaims room rent to the host (`close_room`). Must run after [endRoom] and
+  /// after every slot is closed. Idempotent on already-closed rooms.
+  Future<void> closeRoom({required String roomPda});
 }
 
-/// Null Object binding: reclaim is not yet available (no program IDL). Calls are
-/// no-ops so the compensation path in the application layer can run unconditionally
-/// without leaking exceptions; the residual deposit is left for the future
-/// IDL-backed implementation (or is auto-refunded on-chain at expiry).
+/// Null Object binding: reclaim disabled. Calls are no-ops so the compensation
+/// path in the application layer can run unconditionally without leaking
+/// exceptions; the residual deposit is left for the on-chain `cleanup_*`
+/// fallback. Used until a real [SignalingReclaimGateway] is wired.
 final class UnsupportedSignalingReclaimGateway implements SignalingReclaimGateway {
   const UnsupportedSignalingReclaimGateway();
 
   @override
-  Future<void> closeSlot(String slotPda) async {}
+  Future<void> closeConnectSlot({required String slotPda, String? viewer}) async {}
 
   @override
-  Future<void> closeRoom(String roomPda) async {}
+  Future<void> endRoom({required String roomPda}) async {}
+
+  @override
+  Future<void> closeRoom({required String roomPda}) async {}
 }

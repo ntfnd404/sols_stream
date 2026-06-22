@@ -58,19 +58,25 @@ and signer/writable flags are load-bearing — verified by tests).
 ## Layer structure
 
 ```
-domain/        — ConnectSlotData, ConnectSlotState, RoomCreationParams (Value Objects)
+domain/        — ConnectSlotData, ConnectSlotState, RoomCreationParams, ProgramConfig (VOs)
 application/   — SolanaSignaling (Use Case), SignalingSession, FetchedOffer (Output DTOs),
                  SignalingChainGateway + SignalingReclaimGateway (ports), ConnectionUrlCodec
 data/crypto/         — EncryptedPayload DTO, SignalPayloadCrypto (AES-GCM/PBKDF2)
 data/solana_program/ — InstructionBuilder, ConnectSlotAccountParser (Borsh) →
-                       ConnectSlotAccount (wire DTO) → ConnectSlotMapper → domain
+                       ConnectSlotAccount (wire DTO) → ConnectSlotMapper → domain;
+                       ProgramConfigAccountParser → ProgramConfigAccount → ProgramConfigMapper;
+                       SolanaSignalingReclaimGateway (real reclaim impl);
+                       SolanaErrorCodes + solanaCustomErrorCode (Anchor error decode)
 ```
 
 The on-chain account crosses an **Anti-Corruption boundary**: the parser reads the
 raw Borsh layout into the wire DTO `ConnectSlotAccount` (every field, incl.
 deposits and the reserved protected keys), and `ConnectSlotMapper` translates it
 into the slim domain `ConnectSlotData`. The domain never sees Borsh, the PDA
-`bump`, or always-empty reserved fields.
+`bump`, or always-empty reserved fields. The singleton `ProgramConfig` account
+crosses the same boundary (`ProgramConfigAccountParser` → `ProgramConfigAccount`
+→ `ProgramConfigMapper`), exposing only the `service_wallet` the reclaim flow
+needs.
 
 ## Funds & deposits
 
@@ -84,24 +90,35 @@ so the host never ends up with a paid-for room but no slot — either both depos
 land or neither does.
 
 **Reclaim seam.** Reclaim is modelled as a dedicated port,
-`SignalingReclaimGateway` (`closeSlot` / `closeRoom`), injected into
-`SolanaSignaling`. On a `goLive` that opens a slot but then fails (e.g. the offer
-write), the use case runs a best-effort **compensation** step against this port.
+`SignalingReclaimGateway` (`closeConnectSlot` / `endRoom` / `closeRoom`), injected
+into `SolanaSignaling`. On a `goLive` that opens a slot but then fails (e.g. the
+offer write), the use case runs a best-effort **compensation** step against this
+port.
 
-⚠️ **Reclaim is a no-op until the program IDL is wired.** The default binding is
-the `UnsupportedSignalingReclaimGateway` Null Object, because the program's
-close/reclaim instruction set is **not yet known** (needs the IDL). Two open
-questions decide the final shape (see `docs/project/vision.md`):
+The real binding, `SolanaSignalingReclaimGateway` (`data/solana_program/`), sends
+each close as its **own single-instruction transaction** (the default 200k CU
+budget fits one close; batching could exceed it — ComputeBudget is a later
+phase), so every step fails independently. It is **best-effort, idempotent, and
+never throws**: an already-closed account is idempotent success, `DepositMismatch`
+(6023) and transient RPC errors are retried a bounded number of times, and any
+residual deposit is left for the program's passive `cleanup_*` fallback.
 
-1. Does the program **auto-refund** room/slot deposits at `expiresInSec` (120s)?
-   If so, the Null Object is the permanent, correct binding — nothing to reclaim.
-2. If not, an explicit `close_slot` / `close_room` instruction (disc + accounts
-   from the IDL) is wired into a real `SignalingReclaimGateway`, and a persisted
-   reclaim ledger is added so abandoned deposits survive app restarts.
+The mandated **1% skim** goes to the on-chain `service_wallet`, read from the
+`ProgramConfig` (`[b"config"]`) and cached for the session — **never** a literal
+and **never** a caller-supplied parameter. A missing/unreadable config disables
+reclaim for the session (the program would reject a close without a service
+wallet anyway); the leak then equals the do-nothing baseline. Anchor custom
+errors are decoded by name via `solanaCustomErrorCode` + `SolanaErrorCodes` for
+diagnostics and the retry classifier.
 
-Until then, on **devnet** the wallet auto-airdrops on a low balance
-(see `solana_wallet`); on **mainnet** the atomic transaction above bounds the
-exposure to a slot whose offer write fails after opening.
+> Production wiring (rebinding `SignalingAssembly` from the
+> `UnsupportedSignalingReclaimGateway` Null Object to the real gateway, plus the
+> `_disconnect()` stream-stop / viewer-leave call sites) lands in the app-wiring
+> batch; until then the Null Object remains the default binding.
+
+On **devnet** the wallet auto-airdrops on a low balance (see `solana_wallet`); on
+**mainnet** the atomic open transaction above plus this reclaim seam bound the
+exposure of an abandoned slot/room.
 
 ## Room economics (single mode today)
 

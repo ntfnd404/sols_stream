@@ -185,15 +185,20 @@ class SolanaSignaling {
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   /// Best-effort compensation for a `goLive` that opened a slot but then failed.
-  /// Reclaims the slot and room deposits; never throws, so it cannot mask the
-  /// original failure being rethrown by the caller.
+  /// Reclaims the slot deposit and the room rent; never throws, so it cannot mask
+  /// the original failure being rethrown by the caller.
+  ///
+  /// The slot was just opened and never claimed, so `viewer` is null (the gateway
+  /// substitutes the host placeholder). Order mirrors the program: close the slot
+  /// first, then end and close the room.
   Future<void> _compensateOpenedSlot(SlotAddresses addresses) async {
     try {
-      await _reclaim.closeSlot(addresses.slotPda);
-      await _reclaim.closeRoom(addresses.roomPda);
+      await _reclaim.closeConnectSlot(slotPda: addresses.slotPda);
+      await _reclaim.endRoom(roomPda: addresses.roomPda);
+      await _reclaim.closeRoom(roomPda: addresses.roomPda);
     } on Object {
-      // Reclaim is best-effort; the deposit is left for the IDL-backed gateway
-      // (or on-chain expiry refund) rather than surfacing a secondary error.
+      // Reclaim is best-effort; the deposit is left for the on-chain `cleanup_*`
+      // fallback rather than surfacing a secondary error.
     }
   }
 

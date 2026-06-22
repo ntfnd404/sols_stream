@@ -1,4 +1,5 @@
 import 'package:signaling/src/data/solana_program/solana_error_codes.dart';
+import 'package:solana/solana.dart' show JsonRpcException;
 import 'package:test/test.dart';
 
 void main() {
@@ -32,6 +33,43 @@ void main() {
       ]) {
         expect(() => solanaErrorName(code), returnsNormally, reason: '$code');
       }
+    });
+  });
+
+  group('solanaCustomErrorCode extraction', () {
+    JsonRpcException withData(Object? data) => JsonRpcException('failed', -32002, data);
+
+    test('reads the Custom code from a failed instruction payload', () {
+      final error = withData({
+        'err': {
+          'InstructionError': [0, {'Custom': 6023}],
+        },
+        'logs': <String>[],
+      });
+
+      expect(solanaCustomErrorCode(error), 6023);
+      expect(solanaErrorName(solanaCustomErrorCode(error)!), 'DepositMismatch');
+    });
+
+    test('tolerates InstructionError at the payload top level', () {
+      final error = withData({
+        'InstructionError': [1, {'Custom': 6009}],
+      });
+
+      expect(solanaCustomErrorCode(error), 6009);
+    });
+
+    test('returns null when there is no custom code', () {
+      expect(solanaCustomErrorCode(withData({'err': 'BlockhashNotFound'})), isNull);
+      expect(solanaCustomErrorCode(withData({'err': {'InstructionError': [0, 'InvalidAccountData']}})), isNull);
+      expect(solanaCustomErrorCode(withData(null)), isNull);
+      expect(solanaCustomErrorCode(withData('opaque')), isNull);
+    });
+
+    test('returns null for non-JsonRpcException errors and never throws', () {
+      expect(solanaCustomErrorCode(StateError('x')), isNull);
+      expect(solanaCustomErrorCode('plain string'), isNull);
+      expect(() => solanaCustomErrorCode(Exception('e')), returnsNormally);
     });
   });
 
