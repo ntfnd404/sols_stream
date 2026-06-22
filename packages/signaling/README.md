@@ -37,6 +37,13 @@ transcribed from the production web client `program-client.js` into
 `SignalingProgramConstants` and `SolanaErrorCodes` (one place each). The contract
 is **still in development**, so the client ships new versions periodically.
 
+Account parsers and instruction builders that mirror the contract are also
+transcribed from this source and kept byte-exact: `ConnectSlotAccountParser`
+(Upgrade-07 layout), `ProgramConfigAccountParser` (the `[b"config"]` PDA →
+`service_wallet`), and the reclaim builders `buildCloseConnectSlot` /
+`buildEndRoom` / `buildCloseRoom` in `instruction_builder.dart` (account order
+and signer/writable flags are load-bearing — verified by tests).
+
 - **Captured source:** `packages/signaling/reference/program-client.js`
   — from `https://p2p.sols.stream/ipfs/<CID>/program-client.js`. The IPFS **CID is
   the version** (immutable content hash); a contract update yields a new CID.

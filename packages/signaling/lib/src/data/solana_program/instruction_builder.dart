@@ -38,6 +38,13 @@ Future<Ed25519HDPublicKey> _deriveUserPda(Ed25519HDPublicKey host) => Ed25519HDP
   programId: _programId,
 );
 
+/// Derives the singleton `ProgramConfig` PDA (seed `[b"config"]`, no extra
+/// seeds). Public so the chain gateway can read `service_wallet` from it.
+Future<Ed25519HDPublicKey> deriveConfigPda() => Ed25519HDPublicKey.findProgramAddress(
+  seeds: ['config'.codeUnits],
+  programId: _programId,
+);
+
 Future<Instruction> buildCreateRoom({
   required Ed25519HDPublicKey host,
   required int roomNonce,
@@ -185,3 +192,67 @@ Instruction buildConfirmConnection({
   ],
   data: ByteArray(SignalingProgramConstants.discConfirmConnection),
 );
+
+/// `close_connect_slot` — host reclaims the slot deposit. The program skims 1%
+/// to [serviceWallet] and refunds the rest to host + viewer. `data` is the
+/// discriminator only. Account order is load-bearing (a wrong order/flag loses
+/// funds); see `reference/program-client.js`.
+///
+/// [viewer] must be the slot's claimer; for an unclaimed slot the caller passes
+/// [host] as the placeholder (matching the web client).
+Instruction buildCloseConnectSlot({
+  required Ed25519HDPublicKey host,
+  required Ed25519HDPublicKey slotPda,
+  required Ed25519HDPublicKey viewer,
+  required Ed25519HDPublicKey configPda,
+  required Ed25519HDPublicKey serviceWallet,
+}) => Instruction(
+  programId: _programId,
+  accounts: [
+    AccountMeta.writeable(pubKey: host, isSigner: true),
+    AccountMeta.writeable(pubKey: slotPda, isSigner: false),
+    AccountMeta.writeable(pubKey: viewer, isSigner: false),
+    AccountMeta.readonly(pubKey: configPda, isSigner: false),
+    AccountMeta.writeable(pubKey: serviceWallet, isSigner: false),
+  ],
+  data: ByteArray(SignalingProgramConstants.discCloseConnectSlot),
+);
+
+/// `end_room` — host marks the room not-live. `data` is the discriminator only.
+/// Note the asymmetry with [buildCloseRoom]: here `host` is **read-only**.
+Future<Instruction> buildEndRoom({
+  required Ed25519HDPublicKey host,
+  required Ed25519HDPublicKey roomPda,
+}) async {
+  final userPda = await _deriveUserPda(host);
+
+  return Instruction(
+    programId: _programId,
+    accounts: [
+      AccountMeta.readonly(pubKey: host, isSigner: true),
+      AccountMeta.writeable(pubKey: userPda, isSigner: false),
+      AccountMeta.writeable(pubKey: roomPda, isSigner: false),
+    ],
+    data: ByteArray(SignalingProgramConstants.discEndRoom),
+  );
+}
+
+/// `close_room` — host reclaims the room rent after `end_room`. `data` is the
+/// discriminator only. Note the asymmetry with [buildEndRoom]: here `host` is
+/// **writable** because it receives the reclaimed rent.
+Future<Instruction> buildCloseRoom({
+  required Ed25519HDPublicKey host,
+  required Ed25519HDPublicKey roomPda,
+}) async {
+  final userPda = await _deriveUserPda(host);
+
+  return Instruction(
+    programId: _programId,
+    accounts: [
+      AccountMeta.writeable(pubKey: host, isSigner: true),
+      AccountMeta.writeable(pubKey: userPda, isSigner: false),
+      AccountMeta.writeable(pubKey: roomPda, isSigner: false),
+    ],
+    data: ByteArray(SignalingProgramConstants.discCloseRoom),
+  );
+}

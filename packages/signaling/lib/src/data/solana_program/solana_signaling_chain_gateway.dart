@@ -4,7 +4,10 @@ import 'package:signaling/src/application/signaling_chain_gateway.dart';
 import 'package:signaling/src/data/solana_program/connect_slot_account_parser.dart';
 import 'package:signaling/src/data/solana_program/connect_slot_mapper.dart';
 import 'package:signaling/src/data/solana_program/instruction_builder.dart';
+import 'package:signaling/src/data/solana_program/program_config_account_parser.dart';
+import 'package:signaling/src/data/solana_program/program_config_mapper.dart';
 import 'package:signaling/src/domain/connect_slot_data.dart';
+import 'package:signaling/src/domain/program_config.dart';
 import 'package:signaling/src/domain/room_creation_params.dart';
 import 'package:solana/dto.dart' show BinaryAccountData, Encoding;
 import 'package:solana/solana.dart';
@@ -82,6 +85,20 @@ final class SolanaSignalingChainGateway implements SignalingChainGateway {
     final account = ConnectSlotAccountParser.parse(Uint8List.fromList(bytes));
 
     return ConnectSlotMapper.toDomain(account);
+  }
+
+  @override
+  Future<ProgramConfig?> fetchConfig() async {
+    final configPda = await deriveConfigPda();
+    final info = await _reader.getAccountInfo(configPda.toBase58(), encoding: Encoding.base64);
+    final bin = info.value?.data as BinaryAccountData?;
+    final bytes = bin?.data;
+    if (bytes == null) return null;
+
+    final account = ProgramConfigAccountParser.parse(Uint8List.fromList(bytes));
+    if (account == null) return null;
+
+    return ProgramConfigMapper.toDomain(account);
   }
 
   @override

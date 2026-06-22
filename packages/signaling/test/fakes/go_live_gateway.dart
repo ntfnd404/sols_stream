@@ -42,4 +42,7 @@ class GoLiveGateway implements SignalingChainGateway {
 
   @override
   Future<void> confirmConnection(String slotPda) => throw UnimplementedError();
+
+  @override
+  Future<ProgramConfig?> fetchConfig() => throw UnimplementedError();
 }

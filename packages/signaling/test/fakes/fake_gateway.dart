@@ -46,4 +46,7 @@ class FakeGateway implements SignalingChainGateway {
 
   @override
   Future<void> confirmConnection(String slotPda) => throw UnimplementedError();
+
+  @override
+  Future<ProgramConfig?> fetchConfig() async => null;
 }

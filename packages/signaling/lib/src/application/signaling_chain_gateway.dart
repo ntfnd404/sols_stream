@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:signaling/src/domain/connect_slot_data.dart';
+import 'package:signaling/src/domain/program_config.dart';
 import 'package:signaling/src/domain/room_creation_params.dart';
 
 /// Gateway to the Solana on-chain signaling program.
@@ -34,6 +35,11 @@ abstract interface class SignalingChainGateway {
   });
 
   Future<ConnectSlotData?> fetchSlot(String slotPda);
+
+  /// Reads the singleton `ProgramConfig` account. Returns `null` when the
+  /// config PDA is absent or holds a non-`ProgramConfig` account. The reclaim
+  /// flow uses its `serviceWallet` as the mandated 1%-skim recipient.
+  Future<ProgramConfig?> fetchConfig();
 
   Future<void> writeAnswer(
     String slotPda,

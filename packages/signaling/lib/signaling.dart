@@ -7,5 +7,6 @@ export 'src/application/signaling_session.dart';
 export 'src/application/solana_signaling.dart';
 export 'src/domain/connect_slot_data.dart';
 export 'src/domain/connect_slot_state.dart';
+export 'src/domain/program_config.dart';
 export 'src/domain/room_creation_params.dart';
 export 'src/signaling_assembly.dart';
