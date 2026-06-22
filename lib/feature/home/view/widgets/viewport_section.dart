@@ -68,7 +68,10 @@ class ViewportSection extends StatelessWidget {
       ),
       if (status != null) ...[
         const SizedBox(height: 8),
-        Text(status!, style: TextStyle(color: Theme.of(context).colorScheme.secondary)),
+        SelectableText(
+          status!,
+          style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+        ),
       ],
     ],
   );

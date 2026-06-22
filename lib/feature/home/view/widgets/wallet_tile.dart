@@ -62,7 +62,10 @@ class _WalletTileState extends State<WalletTile> {
               children: [
                 SelectableText(
                   address,
-                  style: const TextStyle(fontSize: 12, color: Colors.white54),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white54,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -70,8 +73,7 @@ class _WalletTileState extends State<WalletTile> {
                     TextButton.icon(
                       icon: const Icon(Icons.copy, size: 16),
                       label: const Text('Copy address'),
-                      onPressed: () =>
-                          Clipboard.setData(ClipboardData(text: address)),
+                      onPressed: () => Clipboard.setData(ClipboardData(text: address)),
                     ),
                     const SizedBox(width: 8),
                     TextButton.icon(
