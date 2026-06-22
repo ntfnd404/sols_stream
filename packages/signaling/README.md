@@ -91,9 +91,13 @@ land or neither does.
 
 **Reclaim seam.** Reclaim is modelled as a dedicated port,
 `SignalingReclaimGateway` (`closeConnectSlot` / `endRoom` / `closeRoom`), injected
-into `SolanaSignaling`. On a `goLive` that opens a slot but then fails (e.g. the
-offer write), the use case runs a best-effort **compensation** step against this
-port.
+into `SolanaSignaling`. `SolanaSignaling` orchestrates it through three
+best-effort, never-throwing entry points: `stopAndReclaim` (host stream-stop —
+closes the retained slot, then `end_room`, then `close_room` in the Q3 order),
+`leaveAndReclaim` (viewer-leave — closes only the viewer's own slot, no room
+ops), and `_compensateOpenedSlot` (a `goLive` that opened a slot but then failed
+the offer write). Each step is guarded independently, so one failing step never
+aborts the rest.
 
 The real binding, `SolanaSignalingReclaimGateway` (`data/solana_program/`), sends
 each close as its **own single-instruction transaction** (the default 200k CU
@@ -111,10 +115,11 @@ wallet anyway); the leak then equals the do-nothing baseline. Anchor custom
 errors are decoded by name via `solanaCustomErrorCode` + `SolanaErrorCodes` for
 diagnostics and the retry classifier.
 
-> Production wiring (rebinding `SignalingAssembly` from the
-> `UnsupportedSignalingReclaimGateway` Null Object to the real gateway, plus the
-> `_disconnect()` stream-stop / viewer-leave call sites) lands in the app-wiring
-> batch; until then the Null Object remains the default binding.
+`SignalingAssembly` binds the real `SolanaSignalingReclaimGateway` in production;
+the app's `_disconnect()` calls the role-appropriate `stopAndReclaim` /
+`leaveAndReclaim` fire-and-forget before dropping the session handles. The
+`UnsupportedSignalingReclaimGateway` Null Object remains the default binding for
+contexts that do not wire reclaim (and for tests).
 
 On **devnet** the wallet auto-airdrops on a low balance (see `solana_wallet`); on
 **mainnet** the atomic open transaction above plus this reclaim seam bound the

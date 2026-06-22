@@ -65,8 +65,8 @@ class SolanaSignaling {
     );
 
     // Deposits have landed on-chain. Any failure past this point must reclaim
-    // them — the saga's compensation step (no-op until the IDL-backed reclaim
-    // gateway is wired; see [SignalingReclaimGateway]).
+    // them — the saga's compensation step (see [_compensateOpenedSlot] /
+    // [SignalingReclaimGateway]).
     try {
       final payload = await _codec.encode(sdpOfferJson, prot, slotNonce, 'offer');
       await _chain.writeOffer(addresses.slotPda, payload);
@@ -182,6 +182,33 @@ class SolanaSignaling {
 
   Future<void> confirmConnection(String slotPda) => _chain.confirmConnection(slotPda);
 
+  // ── Reclaim ──────────────────────────────────────────────────────────────────
+
+  /// Host stream-stop reclaim: closes the retained connect slot, then ends and
+  /// closes the room — the Q3 order (slot before `end_room` before `close_room`).
+  ///
+  /// Each step is guarded independently, so a failing step does not abort the
+  /// rest, and the whole method is best-effort: it NEVER throws into the caller's
+  /// teardown. The slot's on-chain viewer is resolved inside the gateway (it reads
+  /// the slot for idempotency anyway), so `viewer` is left null here rather than
+  /// re-reading the slot and adding a second funds-path failure point.
+  ///
+  /// This app opens exactly one slot per `goLive` and retains one
+  /// [SignalingSession]; multi-slot enumeration is out of scope (no data source
+  /// for sibling slots until on-chain account enumeration lands).
+  Future<void> stopAndReclaim(SignalingSession session) async {
+    await _guardReclaim(() => _reclaim.closeConnectSlot(slotPda: session.slotPda));
+    await _guardReclaim(() => _reclaim.endRoom(roomPda: session.roomPda));
+    await _guardReclaim(() => _reclaim.closeRoom(roomPda: session.roomPda));
+  }
+
+  /// Viewer-leave reclaim: closes only the viewer's own claimed slot. A viewer is
+  /// not the host, so NO `end_room`/`close_room` is issued (they would fail
+  /// `NotHost`). Best-effort: never throws into the caller's teardown.
+  Future<void> leaveAndReclaim(FetchedOffer offer) async {
+    await _guardReclaim(() => _reclaim.closeConnectSlot(slotPda: offer.slotPda));
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   /// Best-effort compensation for a `goLive` that opened a slot but then failed.
@@ -192,13 +219,20 @@ class SolanaSignaling {
   /// substitutes the host placeholder). Order mirrors the program: close the slot
   /// first, then end and close the room.
   Future<void> _compensateOpenedSlot(SlotAddresses addresses) async {
+    await _guardReclaim(() => _reclaim.closeConnectSlot(slotPda: addresses.slotPda));
+    await _guardReclaim(() => _reclaim.endRoom(roomPda: addresses.roomPda));
+    await _guardReclaim(() => _reclaim.closeRoom(roomPda: addresses.roomPda));
+  }
+
+  /// Runs one reclaim [step] swallowing any error. Reclaim is best-effort: a
+  /// residual deposit is left for the program's passive `cleanup_*` fallback
+  /// rather than surfaced — and per-step guarding keeps one failed step from
+  /// aborting the rest of the teardown sequence (PRD Q3).
+  Future<void> _guardReclaim(Future<void> Function() step) async {
     try {
-      await _reclaim.closeConnectSlot(slotPda: addresses.slotPda);
-      await _reclaim.endRoom(roomPda: addresses.roomPda);
-      await _reclaim.closeRoom(roomPda: addresses.roomPda);
+      await step();
     } on Object {
-      // Reclaim is best-effort; the deposit is left for the on-chain `cleanup_*`
-      // fallback rather than surfacing a secondary error.
+      // Best-effort; left for the on-chain `cleanup_*` fallback.
     }
   }
 

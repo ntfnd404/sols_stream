@@ -548,12 +548,31 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _disconnect() async {
     unawaited(_answerSub?.cancel());
     _answerSub = null;
+
+    // Best-effort on-chain deposit reclaim before the handles are dropped. Runs
+    // fire-and-forget: the reclaim methods never throw and we must not block the
+    // teardown UI on the network round-trips.
+    _reclaimDeposits();
+
     _signalingSession = null;
     _fetchedOffer = null;
     await _disposeWebRtc();
     if (!mounted) return;
 
     setState(() => _status = 'Disconnected.');
+  }
+
+  void _reclaimDeposits() {
+    final signaling = _signaling;
+    if (signaling == null) return;
+
+    final session = _signalingSession;
+    final offer = _fetchedOffer;
+    if (_webRtcRole == WebRtcRole.publisher && session != null) {
+      unawaited(signaling.stopAndReclaim(session));
+    } else if (_webRtcRole == WebRtcRole.viewer && offer != null) {
+      unawaited(signaling.leaveAndReclaim(offer));
+    }
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
