@@ -1,0 +1,3006 @@
+{
+  "address": "8rYyL3AY3cb4XrFWfUokXKwQb8uU48XvuLAHNxTgdmXw",
+  "metadata": {
+    "name": "sols_stream",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "admin_force_close_room",
+      "discriminator": [
+        51,
+        57,
+        192,
+        247,
+        45,
+        239,
+        103,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "room",
+          "docs": [
+            "and close it manually by zeroing lamports."
+          ],
+          "writable": true
+        },
+        {
+          "name": "host_user",
+          "docs": [
+            "Host's User PDA — reset role to Idle"
+          ],
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "become_relay",
+      "discriminator": [
+        101,
+        244,
+        32,
+        158,
+        31,
+        72,
+        124,
+        238
+      ],
+      "accounts": [
+        {
+          "name": "viewer",
+          "signer": true
+        },
+        {
+          "name": "viewer_user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "viewer"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_connect_slot",
+      "discriminator": [
+        110,
+        60,
+        180,
+        109,
+        39,
+        35,
+        5,
+        140
+      ],
+      "accounts": [
+        {
+          "name": "viewer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "slot",
+          "writable": true
+        },
+        {
+          "name": "room",
+          "docs": [
+            "Reads `room.price_per_session` (snapshotted into slot.access_price)",
+            "and confirms the slot belongs to this room."
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "deposit_lamports",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "cleanup_expired_slot",
+      "discriminator": [
+        47,
+        245,
+        123,
+        125,
+        160,
+        82,
+        36,
+        111
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "slot",
+          "writable": true
+        },
+        {
+          "name": "host",
+          "writable": true
+        },
+        {
+          "name": "viewer",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "service_wallet",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cleanup_expired_slot_third_party",
+      "discriminator": [
+        17,
+        128,
+        134,
+        184,
+        174,
+        144,
+        182,
+        83
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "slot",
+          "writable": true
+        },
+        {
+          "name": "host",
+          "writable": true
+        },
+        {
+          "name": "viewer",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "service_wallet",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cleanup_stale_room",
+      "discriminator": [
+        197,
+        165,
+        55,
+        4,
+        228,
+        181,
+        208,
+        64
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Caller receives room rent as reward"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "room",
+          "writable": true
+        },
+        {
+          "name": "host_user",
+          "docs": [
+            "Host's User PDA — used to verify the host is dead"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "room.host",
+                "account": "Room"
+              }
+            ]
+          }
+        },
+        {
+          "name": "host_wallet",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "cleanup_stale_user",
+      "discriminator": [
+        110,
+        83,
+        233,
+        184,
+        208,
+        207,
+        11,
+        177
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Any signer — does NOT need to own `target_user`."
+          ],
+          "signer": true
+        },
+        {
+          "name": "target_user",
+          "docs": [
+            "The User PDA being cleaned up. The seeds aren't reverified here",
+            "(no fixed `seeds = [...]` constraint) because the PDA could belong",
+            "to any wallet. The account-level discriminator + the `expires_at`",
+            "guard inside the handler are the only authentication needed."
+          ],
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_connect_slot",
+      "discriminator": [
+        11,
+        246,
+        107,
+        98,
+        155,
+        124,
+        27,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "host",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "slot",
+          "writable": true
+        },
+        {
+          "name": "viewer",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "service_wallet",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_room",
+      "discriminator": [
+        152,
+        197,
+        88,
+        192,
+        98,
+        197,
+        51,
+        211
+      ],
+      "accounts": [
+        {
+          "name": "host",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "host_user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "host"
+              }
+            ]
+          }
+        },
+        {
+          "name": "room",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_user",
+      "discriminator": [
+        86,
+        219,
+        138,
+        140,
+        236,
+        24,
+        118,
+        200
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "user"
+          ]
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "confirm_connection",
+      "discriminator": [
+        219,
+        162,
+        27,
+        145,
+        211,
+        2,
+        134,
+        122
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "slot",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_room",
+      "discriminator": [
+        130,
+        166,
+        32,
+        2,
+        247,
+        120,
+        178,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "host",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "host_user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "host"
+              }
+            ]
+          }
+        },
+        {
+          "name": "room",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  111,
+                  111,
+                  109
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "host"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "type": {
+            "defined": {
+              "name": "RoomCategory"
+            }
+          }
+        },
+        {
+          "name": "access_mode",
+          "type": {
+            "defined": {
+              "name": "AccessMode"
+            }
+          }
+        },
+        {
+          "name": "connection_mode",
+          "type": {
+            "defined": {
+              "name": "ConnectionMode"
+            }
+          }
+        },
+        {
+          "name": "price_per_minute",
+          "type": "u64"
+        },
+        {
+          "name": "price_per_session",
+          "type": "u64"
+        },
+        {
+          "name": "deposit_lamports",
+          "type": "u64"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_user",
+      "discriminator": [
+        108,
+        227,
+        130,
+        130,
+        252,
+        109,
+        75,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "nickname",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "end_room",
+      "discriminator": [
+        102,
+        106,
+        181,
+        155,
+        61,
+        17,
+        40,
+        78
+      ],
+      "accounts": [
+        {
+          "name": "host",
+          "signer": true
+        },
+        {
+          "name": "host_user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "host"
+              }
+            ]
+          }
+        },
+        {
+          "name": "room",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "expire_viewer",
+      "discriminator": [
+        188,
+        15,
+        41,
+        159,
+        21,
+        130,
+        243,
+        211
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "target_user",
+          "writable": true
+        },
+        {
+          "name": "room",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "heartbeat",
+      "discriminator": [
+        202,
+        104,
+        56,
+        6,
+        240,
+        170,
+        63,
+        134
+      ],
+      "accounts": [
+        {
+          "name": "viewer",
+          "signer": true
+        },
+        {
+          "name": "viewer_user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "viewer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "service_wallet",
+          "type": "pubkey"
+        },
+        {
+          "name": "turn_price",
+          "type": "u64"
+        },
+        {
+          "name": "signal_fee",
+          "type": "u64"
+        },
+        {
+          "name": "heartbeat_ttl",
+          "type": "u64"
+        },
+        {
+          "name": "min_heartbeat_interval",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "join_room",
+      "discriminator": [
+        95,
+        232,
+        188,
+        81,
+        124,
+        130,
+        78,
+        139
+      ],
+      "accounts": [
+        {
+          "name": "viewer",
+          "signer": true
+        },
+        {
+          "name": "viewer_user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "viewer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "room",
+          "writable": true
+        },
+        {
+          "name": "host_user",
+          "docs": [
+            "Host's User PDA (for connected_to)"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "leave_room",
+      "discriminator": [
+        249,
+        42,
+        239,
+        128,
+        192,
+        20,
+        114,
+        156
+      ],
+      "accounts": [
+        {
+          "name": "viewer",
+          "signer": true
+        },
+        {
+          "name": "viewer_user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "viewer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "room",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "open_connect_slot",
+      "discriminator": [
+        200,
+        199,
+        43,
+        201,
+        133,
+        53,
+        221,
+        183
+      ],
+      "accounts": [
+        {
+          "name": "host",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "room"
+        },
+        {
+          "name": "slot",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  108,
+                  111,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "room"
+              },
+              {
+                "kind": "arg",
+                "path": "slot_nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "slot_nonce",
+          "type": "u64"
+        },
+        {
+          "name": "deposit_lamports",
+          "type": "u64"
+        },
+        {
+          "name": "expires_in_seconds",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "open_relay_slot",
+      "discriminator": [
+        237,
+        169,
+        69,
+        135,
+        47,
+        97,
+        35,
+        136
+      ],
+      "accounts": [
+        {
+          "name": "relay",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "relay_user",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "relay"
+              }
+            ]
+          }
+        },
+        {
+          "name": "room"
+        },
+        {
+          "name": "slot",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  108,
+                  111,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "room"
+              },
+              {
+                "kind": "arg",
+                "path": "slot_nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "slot_nonce",
+          "type": "u64"
+        },
+        {
+          "name": "deposit_lamports",
+          "type": "u64"
+        },
+        {
+          "name": "expires_in_seconds",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "post_memo",
+      "discriminator": [
+        201,
+        245,
+        220,
+        43,
+        59,
+        13,
+        178,
+        127
+      ],
+      "accounts": [
+        {
+          "name": "sender",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "service_wallet",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "name": "purchase_turn",
+      "discriminator": [
+        188,
+        235,
+        133,
+        237,
+        250,
+        109,
+        124,
+        52
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "buyer_user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "buyer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "service_wallet",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_config",
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "service_wallet",
+          "type": {
+            "option": "pubkey"
+          }
+        },
+        {
+          "name": "turn_price",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "signal_fee",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "heartbeat_ttl",
+          "type": {
+            "option": "u64"
+          }
+        },
+        {
+          "name": "min_heartbeat_interval",
+          "type": {
+            "option": "u64"
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_profile",
+      "discriminator": [
+        98,
+        67,
+        99,
+        206,
+        86,
+        115,
+        175,
+        1
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "user"
+          ]
+        },
+        {
+          "name": "user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "nickname",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "write_answer",
+      "discriminator": [
+        229,
+        79,
+        107,
+        103,
+        29,
+        50,
+        93,
+        119
+      ],
+      "accounts": [
+        {
+          "name": "viewer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "slot",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "viewer_protected_key",
+          "type": "bytes"
+        },
+        {
+          "name": "answer_data",
+          "type": "bytes"
+        },
+        {
+          "name": "finalize",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "write_offer",
+      "discriminator": [
+        50,
+        36,
+        220,
+        142,
+        101,
+        119,
+        205,
+        194
+      ],
+      "accounts": [
+        {
+          "name": "host",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "slot",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "host_protected_key",
+          "type": "bytes"
+        },
+        {
+          "name": "offer_data",
+          "type": "bytes"
+        },
+        {
+          "name": "finalize",
+          "type": "bool"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "ConnectSlot",
+      "discriminator": [
+        97,
+        222,
+        119,
+        195,
+        143,
+        47,
+        180,
+        127
+      ]
+    },
+    {
+      "name": "ProgramConfig",
+      "discriminator": [
+        196,
+        210,
+        90,
+        231,
+        144,
+        149,
+        140,
+        63
+      ]
+    },
+    {
+      "name": "Room",
+      "discriminator": [
+        156,
+        199,
+        67,
+        27,
+        222,
+        23,
+        185,
+        94
+      ]
+    },
+    {
+      "name": "User",
+      "discriminator": [
+        159,
+        117,
+        95,
+        227,
+        239,
+        151,
+        58,
+        236
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AnswerWritten",
+      "discriminator": [
+        153,
+        48,
+        199,
+        174,
+        55,
+        249,
+        209,
+        41
+      ]
+    },
+    {
+      "name": "BecameRelay",
+      "discriminator": [
+        105,
+        207,
+        151,
+        27,
+        211,
+        38,
+        222,
+        60
+      ]
+    },
+    {
+      "name": "ConfigInitialized",
+      "discriminator": [
+        181,
+        49,
+        200,
+        156,
+        19,
+        167,
+        178,
+        91
+      ]
+    },
+    {
+      "name": "ConfigUpdated",
+      "discriminator": [
+        40,
+        241,
+        230,
+        122,
+        11,
+        19,
+        198,
+        194
+      ]
+    },
+    {
+      "name": "ConnectSlotClaimed",
+      "discriminator": [
+        16,
+        59,
+        188,
+        96,
+        153,
+        201,
+        138,
+        153
+      ]
+    },
+    {
+      "name": "ConnectSlotCleanedUpThirdParty",
+      "discriminator": [
+        130,
+        143,
+        209,
+        47,
+        182,
+        55,
+        109,
+        54
+      ]
+    },
+    {
+      "name": "ConnectSlotClosed",
+      "discriminator": [
+        104,
+        225,
+        19,
+        212,
+        162,
+        218,
+        251,
+        89
+      ]
+    },
+    {
+      "name": "ConnectSlotExpired",
+      "discriminator": [
+        190,
+        47,
+        172,
+        253,
+        36,
+        204,
+        219,
+        217
+      ]
+    },
+    {
+      "name": "ConnectSlotOpened",
+      "discriminator": [
+        10,
+        139,
+        249,
+        1,
+        238,
+        134,
+        9,
+        228
+      ]
+    },
+    {
+      "name": "ConnectionConfirmed",
+      "discriminator": [
+        66,
+        225,
+        180,
+        33,
+        158,
+        198,
+        243,
+        48
+      ]
+    },
+    {
+      "name": "HeartbeatSent",
+      "discriminator": [
+        104,
+        195,
+        123,
+        96,
+        64,
+        85,
+        251,
+        122
+      ]
+    },
+    {
+      "name": "MemoPosted",
+      "discriminator": [
+        109,
+        202,
+        82,
+        156,
+        147,
+        213,
+        167,
+        67
+      ]
+    },
+    {
+      "name": "OfferWritten",
+      "discriminator": [
+        98,
+        70,
+        177,
+        142,
+        223,
+        78,
+        9,
+        82
+      ]
+    },
+    {
+      "name": "RoomCleanedUp",
+      "discriminator": [
+        213,
+        30,
+        18,
+        249,
+        189,
+        61,
+        134,
+        239
+      ]
+    },
+    {
+      "name": "RoomClosed",
+      "discriminator": [
+        150,
+        23,
+        85,
+        195,
+        169,
+        114,
+        30,
+        88
+      ]
+    },
+    {
+      "name": "RoomCreated",
+      "discriminator": [
+        9,
+        177,
+        128,
+        166,
+        26,
+        19,
+        14,
+        243
+      ]
+    },
+    {
+      "name": "RoomEnded",
+      "discriminator": [
+        204,
+        239,
+        146,
+        218,
+        190,
+        21,
+        193,
+        184
+      ]
+    },
+    {
+      "name": "SlotCleanedUp",
+      "discriminator": [
+        177,
+        123,
+        185,
+        62,
+        70,
+        165,
+        171,
+        76
+      ]
+    },
+    {
+      "name": "TurnPurchased",
+      "discriminator": [
+        238,
+        51,
+        234,
+        108,
+        182,
+        245,
+        188,
+        91
+      ]
+    },
+    {
+      "name": "UserCleanedUp",
+      "discriminator": [
+        244,
+        199,
+        113,
+        177,
+        223,
+        45,
+        218,
+        37
+      ]
+    },
+    {
+      "name": "UserClosed",
+      "discriminator": [
+        78,
+        205,
+        4,
+        245,
+        226,
+        24,
+        219,
+        51
+      ]
+    },
+    {
+      "name": "UserCreated",
+      "discriminator": [
+        145,
+        177,
+        42,
+        214,
+        0,
+        65,
+        40,
+        69
+      ]
+    },
+    {
+      "name": "UserProfileUpdated",
+      "discriminator": [
+        137,
+        227,
+        236,
+        168,
+        126,
+        29,
+        3,
+        132
+      ]
+    },
+    {
+      "name": "ViewerExpired",
+      "discriminator": [
+        194,
+        112,
+        181,
+        31,
+        164,
+        1,
+        245,
+        94
+      ]
+    },
+    {
+      "name": "ViewerJoined",
+      "discriminator": [
+        149,
+        205,
+        228,
+        15,
+        25,
+        237,
+        47,
+        107
+      ]
+    },
+    {
+      "name": "ViewerLeft",
+      "discriminator": [
+        179,
+        210,
+        148,
+        119,
+        95,
+        107,
+        118,
+        3
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NicknameTooLong",
+      "msg": "Nickname exceeds 32 bytes"
+    },
+    {
+      "code": 6001,
+      "name": "TitleTooLong",
+      "msg": "Title exceeds 64 bytes"
+    },
+    {
+      "code": 6002,
+      "name": "UserNotIdle",
+      "msg": "User is not idle"
+    },
+    {
+      "code": 6003,
+      "name": "NotInRoom",
+      "msg": "User is not in a room"
+    },
+    {
+      "code": 6004,
+      "name": "NotViewer",
+      "msg": "User is not a viewer"
+    },
+    {
+      "code": 6005,
+      "name": "RoomNotLive",
+      "msg": "Room is not live"
+    },
+    {
+      "code": 6006,
+      "name": "RoomAlreadyEnded",
+      "msg": "Room is already ended"
+    },
+    {
+      "code": 6007,
+      "name": "RoomHasViewers",
+      "msg": "Room still has viewers"
+    },
+    {
+      "code": 6008,
+      "name": "RoomMismatch",
+      "msg": "User room does not match provided room"
+    },
+    {
+      "code": 6009,
+      "name": "NotHost",
+      "msg": "Not the room host"
+    },
+    {
+      "code": 6010,
+      "name": "NotExpired",
+      "msg": "Viewer has not expired yet"
+    },
+    {
+      "code": 6011,
+      "name": "TooFrequent",
+      "msg": "Heartbeat sent too frequently"
+    },
+    {
+      "code": 6012,
+      "name": "DataTooLarge",
+      "msg": "Memo data exceeds 900 bytes"
+    },
+    {
+      "code": 6013,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidSlotState",
+      "msg": "Invalid slot state transition"
+    },
+    {
+      "code": 6015,
+      "name": "SlotExpired",
+      "msg": "Connect slot has expired"
+    },
+    {
+      "code": 6016,
+      "name": "SlotNotExpired",
+      "msg": "Connect slot has not expired yet"
+    },
+    {
+      "code": 6017,
+      "name": "ProtectedKeyTooLong",
+      "msg": "Protected key exceeds 256 bytes"
+    },
+    {
+      "code": 6018,
+      "name": "SdpDataTooLong",
+      "msg": "Offer/answer data exceeds 10240 bytes"
+    },
+    {
+      "code": 6019,
+      "name": "ZeroDeposit",
+      "msg": "Deposit amount must be greater than zero"
+    },
+    {
+      "code": 6020,
+      "name": "ZeroExpiry",
+      "msg": "Expires-in seconds must be greater than zero"
+    },
+    {
+      "code": 6021,
+      "name": "NotRelay",
+      "msg": "User is not a relay"
+    },
+    {
+      "code": 6022,
+      "name": "HostStillActive",
+      "msg": "Host is still active — cannot clean up"
+    },
+    {
+      "code": 6023,
+      "name": "DepositMismatch",
+      "msg": "Deposit does not match the value stored on the Room"
+    },
+    {
+      "code": 6024,
+      "name": "InsufficientFunds",
+      "msg": "Caller does not have enough lamports to cover the deposit"
+    },
+    {
+      "code": 6025,
+      "name": "NotStaleEnough",
+      "msg": "Target user is not stale enough to clean up"
+    },
+    {
+      "code": 6026,
+      "name": "IsHostOrViewer",
+      "msg": "Caller is the slot host or viewer — use cleanup_expired_slot instead"
+    },
+    {
+      "code": 6027,
+      "name": "NotConnected",
+      "msg": "Slot is not in the Connected state"
+    },
+    {
+      "code": 6028,
+      "name": "RentSplitOverflow",
+      "msg": "Arithmetic overflow during rent or fee split"
+    },
+    {
+      "code": 6029,
+      "name": "AlreadyConfirmed",
+      "msg": "Connection already confirmed by this party"
+    }
+  ],
+  "types": [
+    {
+      "name": "AccessMode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Public"
+          },
+          {
+            "name": "Private"
+          },
+          {
+            "name": "Paid"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AnswerWritten",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slot",
+            "type": "pubkey"
+          },
+          {
+            "name": "viewer",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BecameRelay",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "room",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "service_wallet",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConnectSlot",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "room",
+            "docs": [
+              "Room PDA"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "host",
+            "docs": [
+              "Host wallet"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "viewer",
+            "docs": [
+              "Viewer wallet (set when viewer claims slot)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "host_deposit",
+            "docs": [
+              "Host's deposit (lamports)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "viewer_deposit",
+            "docs": [
+              "Viewer's deposit (lamports)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "host_protected_key",
+            "docs": [
+              "Host's encrypted passphrase (encrypted by Worker)"
+            ],
+            "type": "bytes"
+          },
+          {
+            "name": "offer_data",
+            "docs": [
+              "Host's encrypted offer SDP (encrypted with passphrase)"
+            ],
+            "type": "bytes"
+          },
+          {
+            "name": "viewer_protected_key",
+            "docs": [
+              "Viewer's encrypted passphrase (encrypted by Worker)"
+            ],
+            "type": "bytes"
+          },
+          {
+            "name": "answer_data",
+            "docs": [
+              "Viewer's encrypted answer SDP"
+            ],
+            "type": "bytes"
+          },
+          {
+            "name": "state",
+            "docs": [
+              "State machine"
+            ],
+            "type": {
+              "defined": {
+                "name": "SlotState"
+              }
+            }
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "expires_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "host_rent_paid",
+            "docs": [
+              "Sum of host's rent contribution (init rent + write_offer top-ups)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "viewer_rent_paid",
+            "docs": [
+              "Sum of viewer's rent contribution (write_answer top-ups)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "access_price",
+            "docs": [
+              "Access price snapshot (lamports). Copied from room.price_per_session",
+              "at claim_connect_slot time. 0 = free room."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "host_confirmed",
+            "docs": [
+              "Host has called confirm_connection."
+            ],
+            "type": "bool"
+          },
+          {
+            "name": "viewer_confirmed",
+            "docs": [
+              "Viewer has called confirm_connection."
+            ],
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConnectSlotClaimed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slot",
+            "type": "pubkey"
+          },
+          {
+            "name": "viewer",
+            "type": "pubkey"
+          },
+          {
+            "name": "deposit",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConnectSlotCleanedUpThirdParty",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slot",
+            "type": "pubkey"
+          },
+          {
+            "name": "cleaner",
+            "type": "pubkey"
+          },
+          {
+            "name": "host_returned",
+            "type": "u64"
+          },
+          {
+            "name": "viewer_returned",
+            "type": "u64"
+          },
+          {
+            "name": "cleaner_reward",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConnectSlotClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slot",
+            "type": "pubkey"
+          },
+          {
+            "name": "host",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConnectSlotExpired",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slot",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConnectSlotOpened",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slot",
+            "type": "pubkey"
+          },
+          {
+            "name": "room",
+            "type": "pubkey"
+          },
+          {
+            "name": "host",
+            "type": "pubkey"
+          },
+          {
+            "name": "deposit",
+            "type": "u64"
+          },
+          {
+            "name": "expires_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConnectionConfirmed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slot",
+            "type": "pubkey"
+          },
+          {
+            "name": "host",
+            "type": "pubkey"
+          },
+          {
+            "name": "viewer",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConnectionMode",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Stream"
+          },
+          {
+            "name": "P2P"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HeartbeatSent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "expires_at",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MemoPosted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sender",
+            "type": "pubkey"
+          },
+          {
+            "name": "data_len",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferWritten",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slot",
+            "type": "pubkey"
+          },
+          {
+            "name": "host",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgramConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "Admin wallet — can update config"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "service_wallet",
+            "docs": [
+              "Receives TURN fees and signal fees"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "turn_price",
+            "docs": [
+              "Lamports for 15-min TURN access (default 5_000_000)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "signal_fee",
+            "docs": [
+              "Fee per post_memo call (can be 0)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "heartbeat_ttl",
+            "docs": [
+              "Seconds before viewer expires without heartbeat (default 300)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "min_heartbeat_interval",
+            "docs": [
+              "Minimum seconds between heartbeats (rate limit, default 60)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Room",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "is_live",
+            "type": "bool"
+          },
+          {
+            "name": "access_mode",
+            "type": {
+              "defined": {
+                "name": "AccessMode"
+              }
+            }
+          },
+          {
+            "name": "category",
+            "type": {
+              "defined": {
+                "name": "RoomCategory"
+              }
+            }
+          },
+          {
+            "name": "connection_mode",
+            "type": {
+              "defined": {
+                "name": "ConnectionMode"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "host",
+            "docs": [
+              "Host wallet"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "docs": [
+              "Incrementing nonce per host"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "started_at",
+            "docs": [
+              "Lifecycle"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "ended_at",
+            "type": "i64"
+          },
+          {
+            "name": "viewer_count",
+            "docs": [
+              "Counters"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "total_viewers",
+            "type": "u32"
+          },
+          {
+            "name": "price_per_minute",
+            "docs": [
+              "Payments (Phase 3)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total_earned",
+            "type": "u64"
+          },
+          {
+            "name": "deposit_lamports",
+            "docs": [
+              "ConnectSlot deposit set by the host at room creation. Both the host's",
+              "`open_connect_slot` and the viewer's `claim_connect_slot` must pass",
+              "this exact value — guards against malicious clients submitting trivial",
+              "deposits and skipping the WebRTC escrow."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "price_per_session",
+            "docs": [
+              "Phase 1 PfA flat-rate price per ConnectSlot session (lamports).",
+              "Set at create_room. 0 = free room (default). Read at claim_connect_slot",
+              "time and snapshotted into slot.access_price."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "title",
+            "docs": [
+              "Room title (max 64 bytes, UTF-8)"
+            ],
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoomCategory",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "General"
+          },
+          {
+            "name": "Gaming"
+          },
+          {
+            "name": "Music"
+          },
+          {
+            "name": "Education"
+          },
+          {
+            "name": "Tech"
+          },
+          {
+            "name": "Art"
+          },
+          {
+            "name": "Social"
+          },
+          {
+            "name": "Other"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoomCleanedUp",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "room",
+            "type": "pubkey"
+          },
+          {
+            "name": "host",
+            "type": "pubkey"
+          },
+          {
+            "name": "cleaner",
+            "type": "pubkey"
+          },
+          {
+            "name": "rent_reward",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoomClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "room",
+            "type": "pubkey"
+          },
+          {
+            "name": "host",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoomCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "room",
+            "type": "pubkey"
+          },
+          {
+            "name": "host",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RoomEnded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "room",
+            "type": "pubkey"
+          },
+          {
+            "name": "host",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SlotCleanedUp",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slot",
+            "type": "pubkey"
+          },
+          {
+            "name": "cleaner",
+            "type": "pubkey"
+          },
+          {
+            "name": "rent_reward",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SlotState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Claimed"
+          },
+          {
+            "name": "OfferReady"
+          },
+          {
+            "name": "AnswerReady"
+          },
+          {
+            "name": "Connected"
+          },
+          {
+            "name": "Expired"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TurnPurchased",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "turn_expires_at",
+            "type": "i64"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "User",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": [
+              "Wallet that owns this account"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "nickname",
+            "docs": [
+              "Display name (max 32 bytes, UTF-8)"
+            ],
+            "type": "string"
+          },
+          {
+            "name": "role",
+            "docs": [
+              "Current role"
+            ],
+            "type": {
+              "defined": {
+                "name": "UserRole"
+              }
+            }
+          },
+          {
+            "name": "room",
+            "docs": [
+              "Room PDA if in a room (Pubkey::default() if Idle)"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "connected_to",
+            "docs": [
+              "Who this user is connected to"
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "last_heartbeat",
+            "docs": [
+              "Last heartbeat timestamp (unix seconds)"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "expires_at",
+            "docs": [
+              "When this user expires (last_heartbeat + config.heartbeat_ttl)"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "turn_expires_at",
+            "docs": [
+              "TURN access expiry (0 = no active TURN)"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "stream_count",
+            "docs": [
+              "Number of streams hosted"
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "total_earned",
+            "docs": [
+              "Total SOL earned (lamports)"
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "Account creation timestamp"
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump"
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserCleanedUp",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "cleaner",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "nickname",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserProfileUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "nickname",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserRole",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Idle"
+          },
+          {
+            "name": "Host"
+          },
+          {
+            "name": "Viewer"
+          },
+          {
+            "name": "Relay"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ViewerExpired",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "room",
+            "type": "pubkey"
+          },
+          {
+            "name": "viewer_count",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ViewerJoined",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "room",
+            "type": "pubkey"
+          },
+          {
+            "name": "viewer",
+            "type": "pubkey"
+          },
+          {
+            "name": "viewer_count",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ViewerLeft",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "room",
+            "type": "pubkey"
+          },
+          {
+            "name": "viewer",
+            "type": "pubkey"
+          },
+          {
+            "name": "viewer_count",
+            "type": "u32"
+          }
+        ]
+      }
+    }
+  ]
+}

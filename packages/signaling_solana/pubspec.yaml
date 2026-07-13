@@ -1,0 +1,23 @@
+name: signaling_solana
+description: Solana adapter for the sols.stream signaling bounded context.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.12.2
+
+resolution: workspace
+
+dependencies:
+  solana: 0.32.0+1
+  http: 1.6.0
+
+  signaling:
+    path: ../signaling
+  solana_wallet:
+    path: ../solana_wallet
+  wallet:
+    path: ../wallet
+
+dev_dependencies:
+  test: ^1.25.0
