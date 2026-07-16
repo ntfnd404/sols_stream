@@ -1,4 +1,4 @@
-import 'package:secure_storage/secure_storage.dart';
+import 'package:secure_storage/secure_storage_contracts.dart';
 
 /// In-memory [SecureStorage] for tests, with optional read/write failure
 /// injection to exercise error paths.

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:secure_storage/secure_storage.dart';
+import 'package:secure_storage/secure_storage_contracts.dart';
 import 'package:solana/solana.dart' show Ed25519HDKeyPair;
 import 'package:solana_wallet/src/domain/wallet_storage_exception.dart';
 
@@ -34,7 +34,7 @@ final class WalletKeyStore {
       return await Ed25519HDKeyPair.fromPrivateKeyBytes(
         privateKey: base64.decode(stored),
       );
-    } on Object catch (_, stack) {
+    } on Exception catch (_, stack) {
       // Present but undecodable — do NOT regenerate (would abandon the account).
       Error.throwWithStackTrace(
         const WalletStorageException('stored key material is corrupt'),
