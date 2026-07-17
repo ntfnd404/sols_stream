@@ -405,6 +405,27 @@ void main() {
       expect(chain.fetchSlotCalls, 3);
     });
 
+    test('does not retry terminal signaling read failures', () async {
+      final chain = PeerChainGateway([
+        const SignalingReadFailureException(),
+        _claimedSlot(),
+      ]);
+      final signaling = _buildSignaling(
+        chain: chain,
+        interop: FakeProtectedSlotGateway(),
+      );
+
+      final session = await signaling.publishOffer(
+        '{"type":"offer","sdp":"v=0"}',
+      );
+
+      await expectLater(
+        session.awaitAnswerSdp(),
+        throwsA(isA<SignalingReadFailureException>()),
+      );
+      expect(chain.fetchSlotCalls, 1);
+    });
+
     test('does not mask slot integrity failures as polling timeouts', () async {
       final chain = PeerChainGateway([
         const FormatException('malformed known slot'),

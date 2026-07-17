@@ -38,6 +38,14 @@ Future<T> classifySolanaRpcRead<T>(Future<T> Function() operation) async {
         stackTrace,
       );
     }
-    rethrow;
+    Error.throwWithStackTrace(
+      const SignalingReadFailureException(),
+      stackTrace,
+    );
+  } on Exception catch (_, stackTrace) {
+    Error.throwWithStackTrace(
+      const SignalingReadFailureException(),
+      stackTrace,
+    );
   }
 }

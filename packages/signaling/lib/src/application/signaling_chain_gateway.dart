@@ -41,9 +41,10 @@ abstract interface class SignalingChainGateway {
   /// Integrity and decoding failures must not be converted to that marker.
   Future<ConnectSlotData?> fetchSlot(String slotPda);
 
-  /// Reads the singleton `ProgramConfig` account. Returns `null` when the
-  /// config PDA is absent or holds a non-`ProgramConfig` account. The reclaim
-  /// flow uses its `serviceWallet` as the mandated 1%-skim recipient.
+  /// Reads the singleton `ProgramConfig` account. Returns `null` only when the
+  /// config PDA is absent. Owner, representation, discriminator, and payload
+  /// failures are integrity failures. The reclaim flow uses `serviceWallet` as
+  /// the mandated 1%-skim recipient.
   Future<ProgramConfig?> fetchConfig();
 
   Future<void> confirmConnection(String slotPda);

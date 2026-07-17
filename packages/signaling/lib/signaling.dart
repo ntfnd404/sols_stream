@@ -15,6 +15,7 @@ export 'src/application/signaling_chain_gateway.dart';
 export 'src/application/signaling_diagnostics.dart';
 export 'src/application/signaling_funding_unavailable_exception.dart';
 export 'src/application/signaling_participant_identity.dart';
+export 'src/application/signaling_read_failure_exception.dart';
 export 'src/application/signaling_reclaim_gateway.dart';
 export 'src/application/signaling_state_integrity_exception.dart';
 export 'src/application/slot_polling_scheduler.dart';
