@@ -2,7 +2,8 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:solana_wallet/solana_wallet.dart';
-import 'package:sols_stream/feature/app/di/app_scope.dart';
+import 'package:sols_stream/core/di/app_scope.dart';
+import 'package:sols_stream/core/security/redactor.dart';
 
 class HubScreen extends StatefulWidget {
   const HubScreen({
@@ -13,7 +14,7 @@ class HubScreen extends StatefulWidget {
     required this.onAccount,
   });
 
-  final VoidCallback onStream;
+  final VoidCallback? onStream;
   final VoidCallback onP2PCall;
   final VoidCallback onJoinRoom;
   final VoidCallback onAccount;
@@ -23,20 +24,20 @@ class HubScreen extends StatefulWidget {
 }
 
 class _HubScreenState extends State<HubScreen> {
-  WalletAccount? _walletAccount;
+  SolanaWalletReader? _walletReader;
   int _balanceLamports = 0;
   bool _loadingBalance = false;
 
   Future<void> _fetchBalance() async {
-    final account = _walletAccount;
-    if (account == null || _loadingBalance) return;
+    final reader = _walletReader;
+    if (reader == null || _loadingBalance) return;
     setState(() => _loadingBalance = true);
     try {
-      final balance = await account.getBalance();
+      final balance = await reader.getBalanceLamports();
       if (!mounted) return;
       setState(() => _balanceLamports = balance);
     } on Exception catch (e) {
-      log('Balance fetch failed: $e', name: 'HubScreen');
+      log('Balance fetch failed: ${Redactor.redact(e)}', name: 'HubScreen');
     } finally {
       if (mounted) setState(() => _loadingBalance = false);
     }
@@ -45,8 +46,8 @@ class _HubScreenState extends State<HubScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_walletAccount == null) {
-      _walletAccount = AppScope.of(context).walletAccount;
+    if (_walletReader == null) {
+      _walletReader = AppScope.of(context).walletReader;
       _fetchBalance();
     }
   }
@@ -78,45 +79,53 @@ class _HubScreenState extends State<HubScreen> {
         ],
       ),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'What would you like to do?',
-                    style: textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'What would you like to do?',
+                          style: textTheme.headlineSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 40),
+                        _ActionCard(
+                          icon: Icons.videocam_outlined,
+                          title: 'Stream',
+                          description: 'Go live and broadcast to viewers',
+                          color: colorScheme.primaryContainer,
+                          onTap: widget.onStream,
+                          unavailableLabel: 'Coming soon',
+                        ),
+                        const SizedBox(height: 16),
+                        _ActionCard(
+                          icon: Icons.call_outlined,
+                          title: 'P2P Call',
+                          description: 'Start a private peer-to-peer video call',
+                          color: colorScheme.secondaryContainer,
+                          onTap: widget.onP2PCall,
+                        ),
+                        const SizedBox(height: 16),
+                        _ActionCard(
+                          icon: Icons.tv_outlined,
+                          title: 'Join Room',
+                          description: 'Connect to an ongoing stream',
+                          color: colorScheme.tertiaryContainer,
+                          onTap: widget.onJoinRoom,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 40),
-                  _ActionCard(
-                    icon: Icons.videocam_outlined,
-                    title: 'Stream',
-                    description: 'Go live and broadcast to viewers',
-                    color: colorScheme.primaryContainer,
-                    onTap: widget.onStream,
-                  ),
-                  const SizedBox(height: 16),
-                  _ActionCard(
-                    icon: Icons.call_outlined,
-                    title: 'P2P Call',
-                    description: 'Start a private peer-to-peer video call',
-                    color: colorScheme.secondaryContainer,
-                    onTap: widget.onP2PCall,
-                  ),
-                  const SizedBox(height: 16),
-                  _ActionCard(
-                    icon: Icons.tv_outlined,
-                    title: 'Join Room',
-                    description: 'Connect to an ongoing stream',
-                    color: colorScheme.tertiaryContainer,
-                    onTap: widget.onJoinRoom,
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -160,13 +169,15 @@ class _ActionCard extends StatelessWidget {
     required this.description,
     required this.color,
     required this.onTap,
+    this.unavailableLabel,
   });
 
   final IconData icon;
   final String title;
   final String description;
   final Color color;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final String? unavailableLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -202,10 +213,21 @@ class _ActionCard extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    if (unavailableLabel case final label?) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        label,
+                        style: textTheme.labelMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              Icon(
+                onTap == null ? Icons.lock_clock_outlined : Icons.chevron_right,
+              ),
             ],
           ),
         ),

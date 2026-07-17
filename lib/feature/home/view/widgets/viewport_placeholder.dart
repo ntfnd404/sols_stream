@@ -7,15 +7,13 @@ class ViewportPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 8),
-            Text(subtitle,
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center),
-          ],
-        ),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 8),
+        Text(subtitle, style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
+      ],
+    ),
+  );
 }

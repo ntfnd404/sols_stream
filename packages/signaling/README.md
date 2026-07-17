@@ -1,82 +1,80 @@
 # signaling
 
-**Bounded context:** Solana on-chain WebRTC P2P signaling
+**Bounded context:** WebRTC P2P signaling protocol and application services
 
-Handles the automated SDP offer/answer exchange between two peers via the
-sols.stream smart contract on Solana. Peers do not exchange data directly —
-everything goes through an on-chain ConnectSlot account.
+Handles the automated SDP offer/answer exchange between peers. The package owns
+the signaling language, use cases, ports, URL codecs, and crypto. Concrete
+Solana program adapters live in `packages/signaling_solana`.
 
 ## Public API
 
 ```dart
 // Publisher
-final session = await signaling.goLive(sdpOfferJson);    // → SignalingSession
-signaling.watchForAnswer(session);                        // Stream<String> sdpAnswer
+final session = await signaling.publishOffer(sdpOfferJson);
+final answer = await session.awaitAnswerSdp();
 
 // Viewer
-final offer = await signaling.fetchOffer(connectionUrl); // → FetchedOffer
+final offer = await signaling.fetchOffer(Uri.parse(connectionUrl));
 await signaling.submitAnswer(offer, sdpAnswerJson);
-
-// Both
-await signaling.confirmConnection(slotPda);
+await signaling.confirm(offer);
 ```
+
+`OnChainPeerSignaling` receives its viewer base URL from the app composition
+root. Local and dev builds currently use the Dart Web client on localhost; a
+public Dart Web deployment has not been selected. The signaling package does
+not own deployment environment URLs.
+
+`KeyBrokerAssembly` selects and owns the `KeyBrokerGateway` provider:
+
+- remote HTTPS broker for dev/shared environments. The broker verifies
+  claims against its Solana cluster.
+- local capability broker only for an isolated local validator. It uses a
+  scoped, expiring capability envelope so separate local app processes can
+  exchange the passphrase without an external broker. The envelope is not
+  confidential from users who can read local chain state.
+
+The HTTP adapter requires an injected HTTPS origin and owned `http.Client`,
+does not follow redirects, and does not spoof browser headers. Concrete
+gateways are internal; consumers use the assembly and application port.
 
 ## Dependencies
 
 | Package | Why |
 |---------|-----|
-| `solana_wallet` | `SolanaSigner` interface — transaction signing, balance, funding |
-| `solana` | RPC client, transaction types, PDA derivation |
 | `cryptography` | AES-GCM + PBKDF2 for SDP payload protection |
+| `http` | Key broker HTTP adapter |
 
 ## Source of truth & re-sync
 
-There is **no Anchor IDL** in the repo. The on-chain program's instruction and
-account discriminators and the custom-error map (`SOLS_ERROR_NAMES`) are
-transcribed from the production web client `program-client.js` into
-`SignalingProgramConstants` and `SolanaErrorCodes` (one place each). The contract
-is **still in development**, so the client ships new versions periodically.
+The protocol package does not own Solana wire artifacts. The versioned Anchor
+IDL and generated wire SDK belong to `packages/signaling_solana`; its internal
+account decoders, mappers, and instruction factory form the consumer-owned
+compatibility layer. Run `make check-idl check-solana-sdk` before changing
+on-chain adapters and `make fetch-idl` to refresh the checked-in IDL.
 
-Account parsers and instruction builders that mirror the contract are also
-transcribed from this source and kept byte-exact: `ConnectSlotAccountParser`
-(Upgrade-07 layout), `ProgramConfigAccountParser` (the `[b"config"]` PDA →
-`service_wallet`), and the reclaim builders `buildCloseConnectSlot` /
-`buildEndRoom` / `buildCloseRoom` in `instruction_builder.dart` (account order
-and signer/writable flags are load-bearing — verified by tests).
-
-- **Captured source:** `packages/signaling/reference/program-client.js`
-  — from `https://p2p.sols.stream/ipfs/<CID>/program-client.js`. The IPFS **CID is
-  the version** (immutable content hash); a contract update yields a new CID.
-- **Current capture:** CID `bafybeiabqt3ptjgc6c7u62rzf72mwlsmk6g7sd3ah7ykedlkkiqcxtkf5q`,
-  2026-06-21, sha256 `1191815b8df70204f8641061bcae2aaa6605ea0b7e1e073021125d10cc1a6b9e`.
-- **Re-sync workflow:** drop the new `program-client.js` over the captured copy →
-  `git diff` to see what changed → re-validate the affected discriminators (each
-  also equals the Anchor sighash `sha256("global:"+ix)[:8]`) and the error map →
-  edit `signaling_program_constants.dart` / `solana_error_codes.dart` → bump the
-  CID/hash/date here and in the constants header.
+Permanent wire-vector tests protect load-bearing discriminators, account order,
+and signer/writable flags. Generated registries cover every IDL declaration;
+legacy `ConnectSlot` and projected `User` decoding remain explicit adapter
+policies rather than generator defaults.
 
 ## Layer structure
 
 ```
 domain/        — ConnectSlotData, ConnectSlotState, RoomCreationParams, ProgramConfig (VOs)
-application/   — SolanaSignaling (Use Case), SignalingSession, FetchedOffer (Output DTOs),
-                 SignalingChainGateway + SignalingReclaimGateway (ports), ConnectionUrlCodec
-data/crypto/         — EncryptedPayload DTO, SignalPayloadCrypto (AES-GCM/PBKDF2)
-data/solana_program/ — InstructionBuilder, ConnectSlotAccountParser (Borsh) →
-                       ConnectSlotAccount (wire DTO) → ConnectSlotMapper → domain;
-                       ProgramConfigAccountParser → ProgramConfigAccount → ProgramConfigMapper;
-                       SolanaSignalingReclaimGateway (real reclaim impl);
-                       SolanaErrorCodes + solanaCustomErrorCode (Anchor error decode)
+application/   — PeerSignaling port, OnChainPeerSignaling use case,
+                 PeerHostSession / PeerOffer DTOs, chain and protected-slot ports
+data/crypto/         — passphrase payload protection
+data/http_key_broker_gateway.dart — remote key broker HTTP adapter
+data/local_key_broker_gateway.dart — isolated local-development adapter
+assembly/             — typed key-broker configuration and owned lifecycle
 ```
 
-The on-chain account crosses an **Anti-Corruption boundary**: the parser reads the
-raw Borsh layout into the wire DTO `ConnectSlotAccount` (every field, incl.
-deposits and the reserved protected keys), and `ConnectSlotMapper` translates it
-into the slim domain `ConnectSlotData`. The domain never sees Borsh, the PDA
-`bump`, or always-empty reserved fields. The singleton `ProgramConfig` account
-crosses the same boundary (`ProgramConfigAccountParser` → `ProgramConfigAccount`
-→ `ProgramConfigMapper`), exposing only the `service_wallet` the reclaim flow
-needs.
+The on-chain account crosses an **Anti-Corruption boundary** in
+`signaling_solana`: generated wire models are decoded under call-site-specific
+integrity policies, then mapped into the slim `signaling` domain models. The
+domain never sees Borsh, PDA bumps, generated variants, or compatibility
+fallbacks. `ProgramConfig` crosses the same boundary and exposes only the
+service wallet, TURN price, and heartbeat interval needed by the application.
 
 ## Funds & deposits
 
@@ -85,45 +83,55 @@ Each session deposits SOL on-chain (anti-spam / account rent):
 - **Host** pays `0.001 SOL` for the room + `0.001 SOL` for the slot (`0.002` total).
 - **Each viewer** pays `0.001 SOL` when claiming the slot.
 
-**Atomicity.** `create_room` + `open_slot` are sent as **one atomic transaction**,
-so the host never ends up with a paid-for room but no slot — either both deposits
-land or neither does.
+**Sequencing.** A host User PDA is created or cleaned up first, then TURN
+entitlement is purchased when `user.turn_expires_at` is absent or expired, then
+`create_room` and `open_slot` are sent as separate confirmed transactions. The
+deployed program rejects `create_room` with `Unauthorized` (6013) when TURN
+entitlement is missing.
 
 **Reclaim seam.** Reclaim is modelled as a dedicated port,
-`SignalingReclaimGateway` (`closeConnectSlot` / `endRoom` / `closeRoom`), injected
-into `SolanaSignaling`. `SolanaSignaling` orchestrates it through three
-best-effort, never-throwing entry points: `stopAndReclaim` (host stream-stop —
-closes the retained slot, then `end_room`, then `close_room` in the Q3 order),
-`leaveAndReclaim` (viewer-leave — closes only the viewer's own slot, no room
-ops), and `_compensateOpenedSlot` (a `goLive` that opened a slot but then failed
-the offer write). Each step is guarded independently, so one failing step never
-aborts the rest.
+`SignalingReclaimGateway` (`closeConnectSlot` / `endRoom` / `closeRoom`),
+injected into `OnChainPeerSignaling`. Host teardown closes the retained slot,
+then ends and closes the room. Setup compensation uses the same order. Each
+step is guarded independently, so one failing step never aborts the rest.
 
-The real binding, `SolanaSignalingReclaimGateway` (`data/solana_program/`), sends
+`close_connect_slot` is host-authorized by the deployed program. A viewer must
+not attempt to sign it as host. Viewer disconnect therefore leaves immediate
+slot closure to the host teardown; that host transaction refunds both the host
+and the on-chain viewer. Passive `cleanup_*` remains the fallback when the host
+does not return.
+
+The real binding, `SolanaSignalingReclaimGateway` (`packages/signaling_solana`), sends
 each close as its **own single-instruction transaction** (the default 200k CU
 budget fits one close; batching could exceed it — ComputeBudget is a later
-phase), so every step fails independently. It is **best-effort, idempotent, and
-never throws**: an already-closed account is idempotent success, `DepositMismatch`
-(6023) and transient RPC errors are retried a bounded number of times, and any
-residual deposit is left for the program's passive `cleanup_*` fallback.
+phase), so every step fails independently. It returns a typed `ReclaimOutcome`
+(`succeeded`, `alreadyClosed`, `disabled`, or `failed`), is idempotent, and
+never exposes raw RPC errors in diagnostics. `DepositMismatch` and transient
+RPC errors are classified through generated custom-error helpers and retried a
+bounded number of times; any residual deposit is left for the program's passive
+`cleanup_*` fallback.
 
 The mandated **1% skim** goes to the on-chain `service_wallet`, read from the
 `ProgramConfig` (`[b"config"]`) and cached for the session — **never** a literal
-and **never** a caller-supplied parameter. A missing/unreadable config disables
-reclaim for the session (the program would reject a close without a service
-wallet anyway); the leak then equals the do-nothing baseline. Anchor custom
-errors are decoded by name via `solanaCustomErrorCode` + `SolanaErrorCodes` for
-diagnostics and the retry classifier.
+and **never** a caller-supplied parameter. The same config supplies the TURN
+service wallet for `purchase_turn` and the minimum heartbeat interval. A
+missing/unreadable config disables reclaim for the session (the program would
+reject a close without a service wallet anyway); the leak then equals the
+do-nothing baseline. Anchor custom errors are decoded through the generated
+program error parser for diagnostics and the retry classifier.
 
-`SignalingAssembly` binds the real `SolanaSignalingReclaimGateway` in production;
-the app's `_disconnect()` calls the role-appropriate `stopAndReclaim` /
-`leaveAndReclaim` fire-and-forget before dropping the session handles. The
-`UnsupportedSignalingReclaimGateway` Null Object remains the default binding for
-contexts that do not wire reclaim (and for tests).
+`SignalingSolanaAssembly` binds the real `SolanaSignalingReclaimGateway` in
+production. Host disconnect awaits the role-authorized teardown before dropping
+session handles. The `UnsupportedSignalingReclaimGateway` Null Object remains
+the default binding for contexts that do not wire reclaim (and for tests).
 
-On **devnet** the wallet auto-airdrops on a low balance (see `solana_wallet`); on
-**mainnet** the atomic open transaction above plus this reclaim seam bound the
-exposure of an abandoned slot/room.
+On **devnet**, `signaling_solana` checks the configured wallet funding service
+immediately before each broadcast transaction (see `solana_wallet`). On
+**mainnet**, the ordered confirmed transactions plus this reclaim seam bound
+the exposure of an abandoned slot/room. Read-only, proof-signing, and reclaim
+operations do not invoke funding sources. Funded and reclaim broadcasts share
+one FIFO transaction coordinator, so every funded send checks the balance after
+the preceding transaction has completed.
 
 ## Room economics (single mode today)
 
@@ -136,25 +144,18 @@ grow that logic until that ticket lands.
 
 ## Security model
 
-The `prot` field in the `sols://` connection URL is a 32-byte random
-capability key. **Possession of a full `sols://` URL — specifically the `prot`
-query parameter — is sufficient to decrypt and answer a signaling slot.**
-
-Threat surface:
-
-- The URL must be shared out-of-band (QR code, clipboard, deep link). Any
-  channel that logs or caches full URIs can expose `prot`.
-- The app must not pass a `sols://` URL to analytics, crash reporters, or URL
-  shorteners unless the `prot` component is stripped first.
-- `prot` is bound to a single slot via PBKDF2 (`prot + slotNonce`) and scoped
-  further by a message-type tag in the AAD (`slotNonce:offer` or
-  `slotNonce:answer`), so an offer ciphertext cannot be replayed as an answer.
-- Slot expiry (`expiresAt`) limits the replay window; after expiry the on-chain
-  account is closed and the key material is worthless.
+The HTTP(S) invite carries only routing information and the host address.
+Offer and answer passphrases are protected by the configured key broker and
+released only after proof validation. Invite URLs, protected keys, proofs,
+passphrases, SDP, authorization headers, and broker response bodies must not be
+logged. Slot expiry and broker TTL bound the replay window.
 
 ## Intentionally out of scope
 
 - Keypair management and storage → `solana_wallet`
-- Wallet funding / airdrop logic → `solana_wallet`
-- WebRTC peer connection → `flutter_webrtc` (in `lib/`)
-- General-purpose encryption — `SignalPayloadCrypto` is protocol-specific
+- Wallet identity, balance, signing, persistence, and funding → `solana_wallet`
+- Funding preconditions at the Solana transaction boundary → `signaling_solana`
+- Solana program wire format and gateways → `signaling_solana`
+- WebRTC peer connection and media lifecycle → `realtime_media`
+- HLS playback lifecycle → `streaming`
+- General-purpose encryption

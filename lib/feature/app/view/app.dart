@@ -5,13 +5,14 @@ import 'package:sols_stream/feature/app/lock/lock_controller.dart';
 import 'package:sols_stream/feature/app/lock/lock_scope.dart';
 import 'package:sols_stream/feature/app/routing/app_navigator.dart';
 import 'package:sols_stream/feature/app/routing/app_route_registry.dart';
+import 'package:sols_stream/feature/app/routing/app_route_url_codec.dart';
 import 'package:sols_stream/feature/app/routing/lock_guard.dart';
 import 'package:sols_stream/feature/app/routing/routes/app_route.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 /// Root application widget.
 ///
-/// [AppScope] is placed above this widget (in `main`) so the routing delegate
+/// `AppScope` is placed above this widget (in `main`) so the routing delegate
 /// and every screen can read `AppDependencies`. This widget places
 /// `NavigatorScope` and `LockScope` ABOVE `MaterialApp.router` (C5) so
 /// `context.navigator` and the lock state work in every `buildPage` and screen.
@@ -49,7 +50,7 @@ class _AppState extends State<App> {
     pipeline.refresh.addListener(_state.reevaluate);
     _navigator = AppNavigator(_state);
     _delegate = RoutingDelegate<AppRoute>(_state);
-    _parser = RoutingInformationParser<AppRoute>(TreeUrlCodec<AppRoute>(appRouteRegistry));
+    _parser = RoutingInformationParser<AppRoute>(AppRouteUrlCodec());
   }
 
   @override

@@ -11,38 +11,38 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Settings')),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: <Widget>[
-            for (var id = 1; id <= 3; id++)
-              ListTile(
-                leading: const Icon(Icons.dns_outlined),
-                title: Text('Network #$id'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => context.navigator.openSettingsDetail(id),
-              ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.lan_outlined),
-              title: const Text('Select network'),
-              subtitle: const Text('Push-for-result demo'),
-              onTap: () async {
-                final network = await context.navigator.pickNetwork();
-                if (network != null && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Picked: $network')),
-                  );
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.lock_outline),
-              title: const Text('Lock account'),
-              subtitle: const Text('Redirects to the unlock screen (guard demo)'),
-              onTap: () => LockScope.of(context).lock(),
-            ),
-          ],
+    appBar: AppBar(title: const Text('Settings')),
+    body: ListView(
+      padding: const EdgeInsets.all(16),
+      children: <Widget>[
+        for (var id = 1; id <= 3; id++)
+          ListTile(
+            leading: const Icon(Icons.dns_outlined),
+            title: Text('Network #$id'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.navigator.openSettingsDetail(id),
+          ),
+        const Divider(),
+        ListTile(
+          leading: const Icon(Icons.lan_outlined),
+          title: const Text('Select network'),
+          subtitle: const Text('Push-for-result demo'),
+          onTap: () async {
+            final network = await context.navigator.pickNetwork();
+            if (network != null && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Picked: $network')),
+              );
+            }
+          },
         ),
-      );
+        ListTile(
+          leading: const Icon(Icons.lock_outline),
+          title: const Text('Lock account'),
+          subtitle: const Text('Redirects to the unlock screen (guard demo)'),
+          onTap: () => LockScope.of(context).lock(),
+        ),
+      ],
+    ),
+  );
 }

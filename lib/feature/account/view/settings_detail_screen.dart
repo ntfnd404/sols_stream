@@ -11,7 +11,7 @@ class SettingsDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text('Network #$id')),
-        body: Center(child: Text('Details for network #$id')),
-      );
+    appBar: AppBar(title: Text('Network #$id')),
+    body: Center(child: Text('Details for network #$id')),
+  );
 }

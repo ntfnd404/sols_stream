@@ -1,84 +1,161 @@
-import 'package:http/http.dart';
+// ignore_for_file: prefer_initializing_formals
+
+import 'dart:async';
+import 'dart:developer';
+
+import 'package:meta/meta.dart';
 import 'package:secure_storage/secure_storage.dart';
+import 'package:signaling/key_broker_assembly.dart';
 import 'package:signaling/signaling.dart';
+import 'package:signaling_solana/signaling_solana.dart';
 import 'package:solana/solana.dart' show RpcClient;
-import 'package:solana_wallet/solana_wallet.dart';
+import 'package:solana_wallet/solana_wallet_assembly.dart';
 import 'package:sols_stream/core/config/app_environment.dart';
 import 'package:sols_stream/core/di/app_dependencies.dart';
+import 'package:sols_stream/core/di/app_resource_disposal_exception.dart';
+import 'package:sols_stream/core/di/app_resource_disposal_stack.dart';
 import 'package:sols_stream/core/event_bus/app_event_bus.dart';
+import 'package:sols_stream/core/security/redactor.dart';
 
-/// Composition root — wires all concrete infrastructure implementations.
-final class AppDependenciesBuilder {
-  // Wallet policy lives in the composition root (RpcEnvironment carries only
-  // endpoints). The wallet package stays free of app-specific constants.
-  static const String _walletStorageKey = 'sols_stream_wallet_v1';
-  static const int _minLamports = 2000000; // 0.002 SOL — room + slot + writes
-  static const int _airdropLamports = 40000000; // 0.04 SOL
-
+/// Composition root that coordinates application module assemblies.
+base class AppDependenciesBuilder {
   final AppEnvironment _environment;
   final void Function(AppDependencies dependencies) _builder;
-  final void Function(Object error, StackTrace stack) _onError;
+  final AppErrorReporter _onError;
 
-  AppDependenciesBuilder._({
-    required this._environment,
-    required this._builder,
-    required this._onError,
-  });
-
-  static void create({
+  const AppDependenciesBuilder({
     required AppEnvironment environment,
     required void Function(AppDependencies dependencies) builder,
-    required void Function(Object error, StackTrace stack) onError,
-  }) {
-    final instance = AppDependenciesBuilder._(
-      environment: environment,
-      builder: builder,
-      onError: onError,
-    );
-    instance._build();
-  }
+    required AppErrorReporter onError,
+  }) : _environment = environment,
+       _builder = builder,
+       _onError = onError;
 
-  Future<void> _build() async {
+  /// Builds the graph and transfers its ownership to [_builder].
+  @nonVirtual
+  Future<void> build() async {
+    final resourceDisposalStack = AppResourceDisposalStack();
+    final AppDependencies dependencies;
+
     try {
-      const secureStorage = SecureStorageImpl();
-      final rpcEnvironment = _environment.rpc;
-      final rpc = RpcClient(rpcEnvironment.url);
-      final airdropRpc = RpcClient(rpcEnvironment.airdropUrl);
-      final httpClient = Client();
-
-      final fundingGateway = AirdropFaucetFundingGateway(
-        rpcClient: airdropRpc,
-        httpClient: httpClient,
-        faucetUri: rpcEnvironment.faucetUri,
-        minLamports: _minLamports,
-        airdropLamports: _airdropLamports,
+      dependencies = await buildDependencies(resourceDisposalStack);
+    } catch (error, stackTrace) {
+      await _handleBuildFailure(
+        resourceDisposalStack: resourceDisposalStack,
+        error: error,
+        stackTrace: stackTrace,
       );
+    }
 
-      final wallet = await SolanaWalletAssembly.create(
-        storage: secureStorage,
-        rpc: rpc,
-        fundingGateway: fundingGateway,
-        storageKey: _walletStorageKey,
-      );
-
-      // `reader` is the same RPC instance the wallet uses; signaling owns its
-      // reads through this port rather than borrowing the signer's transport.
-      final signalingAssembly = SignalingAssembly(
-        signer: wallet.signer,
-        account: wallet.account,
-        reader: rpc,
-      );
-
-      _builder(
-        AppDependencies(
-          eventBus: AppEventBus(),
-          signaling: signalingAssembly.signaling,
-          walletSigner: wallet.signer,
-          walletAccount: wallet.account,
-        ),
-      );
-    } catch (e, s) {
-      _onError(e, s);
+    try {
+      _builder(dependencies);
+    } catch (error, stackTrace) {
+      await _disposeAndReport(resourceDisposalStack);
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
+
+  /// Creates the concrete graph inside the ownership boundary.
+  ///
+  /// Subclasses may replace graph construction while retaining the lifecycle
+  /// and error semantics implemented by [build].
+  @protected
+  Future<AppDependencies> buildDependencies(
+    AppResourceDisposalStack resourceDisposalStack,
+  ) async {
+    const secureStorage = SecureStorageImpl();
+    final rpcEnvironment = _environment.rpc;
+    final walletEnvironment = _environment.wallet;
+    final rpc = RpcClient(rpcEnvironment.url.toString());
+    void diagnostics(String event) => log(
+      event,
+      name: 'Signaling',
+    );
+
+    log(
+      'rpc=${Redactor.redactUrl(rpcEnvironment.url.toString())} '
+      'invite=${Redactor.redactUrl(_environment.peerInvite.url.toString())} '
+      'broker=${_safeBrokerDescription(_environment.keyBroker.config)}',
+      name: 'Environment',
+    );
+
+    final wallet = resourceDisposalStack.register(
+      await SolanaWalletAssembly.create(
+        storage: secureStorage,
+        rpc: rpc,
+        funding: walletEnvironment.funding,
+        storageKey: walletEnvironment.storageKey,
+      ),
+      (assembly) => assembly.dispose(),
+    );
+    log(
+      'address=${wallet.reader.address}',
+      name: 'Wallet',
+    );
+
+    final keyBroker = resourceDisposalStack.register(
+      KeyBrokerAssembly.create(_environment.keyBroker.config),
+      (assembly) => assembly.dispose(),
+    );
+    final signalingAssembly = SignalingSolanaAssembly(
+      signer: wallet.signer,
+      fundingService: wallet.fundingService,
+      reader: rpc,
+      peerInviteBase: _environment.peerInvite.base,
+      broker: keyBroker.gateway,
+      diagnostics: diagnostics,
+    );
+    final eventBus = resourceDisposalStack.register(
+      AppEventBus(),
+      (resource) => resource.dispose(),
+    );
+
+    return AppDependencies(
+      eventBus: eventBus,
+      peerSignaling: signalingAssembly.peerSignaling,
+      walletReader: wallet.reader,
+      resourceDisposalStack: resourceDisposalStack,
+      errorReporter: _onError,
+    );
+  }
+
+  Future<Never> _handleBuildFailure({
+    required AppResourceDisposalStack resourceDisposalStack,
+    required Object error,
+    required StackTrace stackTrace,
+  }) async {
+    await _disposeAndReport(resourceDisposalStack);
+    await _reportSafely(error, stackTrace);
+    Error.throwWithStackTrace(error, stackTrace);
+  }
+
+  Future<void> _disposeAndReport(
+    AppResourceDisposalStack resourceDisposalStack,
+  ) async {
+    try {
+      await resourceDisposalStack.dispose();
+    } on AppResourceDisposalException catch (error) {
+      for (final failure in error.failures) {
+        await _reportSafely(failure.error, failure.stackTrace);
+      }
+    }
+  }
+
+  Future<void> _reportSafely(
+    Object error,
+    StackTrace stackTrace,
+  ) async {
+    try {
+      await _onError(error, stackTrace);
+    } catch (reportError, reportStackTrace) {
+      Zone.current.handleUncaughtError(reportError, reportStackTrace);
+    }
+  }
+
+  String _safeBrokerDescription(KeyBrokerConfig config) => switch (config) {
+    LocalKeyBrokerConfig() => 'local',
+    HttpKeyBrokerConfig(:final endpoint) => Redactor.redactUrl(
+      endpoint.toString(),
+    ),
+  };
 }

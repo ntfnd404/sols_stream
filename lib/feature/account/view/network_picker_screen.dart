@@ -11,16 +11,16 @@ class NetworkPickerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Select network')),
-        body: ListView(
-          children: <Widget>[
-            for (final network in _networks)
-              ListTile(
-                leading: const Icon(Icons.dns_outlined),
-                title: Text(network),
-                onTap: () => context.navigator.popWith<String>(network),
-              ),
-          ],
-        ),
-      );
+    appBar: AppBar(title: const Text('Select network')),
+    body: ListView(
+      children: <Widget>[
+        for (final network in _networks)
+          ListTile(
+            leading: const Icon(Icons.dns_outlined),
+            title: Text(network),
+            onTap: () => context.navigator.popWith<String>(network),
+          ),
+      ],
+    ),
+  );
 }

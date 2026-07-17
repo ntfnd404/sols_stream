@@ -1,18 +1,51 @@
 import 'package:rolter/rolter.dart';
 import 'package:sols_stream/feature/account/view/account_tab.dart';
 import 'package:sols_stream/feature/app/routing/routes/app_route.dart';
-import 'package:sols_stream/feature/home/view/enums/home_intent.dart';
+import 'package:sols_stream/feature/home/model/session_mode.dart';
+import 'package:sols_stream/feature/home/model/web_rtc_role.dart';
 
 export 'app_navigator_context.dart';
 
 /// Typed navigation sugar for the app. Screens call these instead of building
 /// route objects, and a later engine swap only re-implements this class.
 class AppNavigator extends NavigationController<AppRoute> {
-  const AppNavigator(super.state);
+  final RoutesState<AppRoute> _routesState;
+
+  const AppNavigator(this._routesState) : super(_routesState);
 
   void toHub() => clearAndPush(const HubRoute());
 
-  void toHome(HomeIntent intent) => pushOrReplaceTop(HomeRoute(intent));
+  void toHome({
+    required SessionMode sessionMode,
+    required WebRtcRole webRtcRole,
+  }) => pushOrReplaceTop(
+    HomeRoute(
+      sessionMode,
+      webRtcRole: webRtcRole,
+    ),
+  );
+
+  void syncHomeRole(WebRtcRole role) {
+    final current = _routesState.top;
+    if (current is! HomeRoute) return;
+    replaceTop(
+      HomeRoute(
+        current.sessionMode,
+        webRtcRole: role,
+      ),
+    );
+  }
+
+  void syncHomeSessionMode(SessionMode mode) {
+    final current = _routesState.top;
+    if (current is! HomeRoute) return;
+    replaceTop(
+      HomeRoute(
+        mode,
+        webRtcRole: current.webRtcRole,
+      ),
+    );
+  }
 
   void toAccount() => push(const AccountRoute());
 

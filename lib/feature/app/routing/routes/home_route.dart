@@ -1,24 +1,81 @@
 part of 'app_route.dart';
 
-/// Streaming/playback screen. [intent] is a typed field; on the wire it is only
-/// `intent=<name>` and no screen ever sees the map.
+/// Streaming/playback screen with optional web-interoperability invite data.
 final class HomeRoute extends AppRoute {
-  final HomeIntent intent;
+  final SessionMode sessionMode;
+  final WebRtcRole webRtcRole;
+  final String? hostAddress;
+  final bool isPublic;
 
   @override
-  LocalKey get pageKey => ValueKey<String>('home:${intent.name}');
+  LocalKey get pageKey => const ValueKey<String>('home');
 
   @override
   String get name => 'home';
 
-  const HomeRoute(this.intent);
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    sessionMode,
+    webRtcRole,
+    hostAddress,
+    isPublic,
+  );
+
+  const HomeRoute(
+    this.sessionMode, {
+    required this.webRtcRole,
+    this.hostAddress,
+    this.isPublic = false,
+  });
 
   @override
-  Map<String, String> toParams() => <String, String>{'intent': intent.name};
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HomeRoute &&
+          sessionMode == other.sessionMode &&
+          webRtcRole == other.webRtcRole &&
+          hostAddress == other.hostAddress &&
+          isPublic == other.isPublic;
+
+  @override
+  Map<String, String> toParams() => <String, String>{
+    'intent': sessionMode.name,
+    'role': webRtcRole.name,
+    'host': ?hostAddress,
+    if (hostAddress != null) 'public': isPublic ? '1' : '0',
+  };
+
+  String? connectionUrl(Uri baseUri) {
+    final host = hostAddress;
+    if (host == null || host.isEmpty) return null;
+
+    return baseUri
+        .replace(
+          path: '/home',
+          queryParameters: <String, String>{
+            'intent': sessionMode.name,
+            'role': webRtcRole.name,
+            'host': host,
+            'public': isPublic ? '1' : '0',
+          },
+        )
+        .toString();
+  }
 
   @override
   Page<Object?> buildPage(BuildContext context) => MaterialPage<void>(
     key: pageKey,
-    child: HomeScreen(intent: intent),
+    child: HomeScope(
+      child: CallScope(
+        child: HomeScreen(
+          sessionMode: sessionMode,
+          webRtcRole: webRtcRole,
+          initialConnectionUrl: connectionUrl(Uri.base),
+          onRoleChanged: context.navigator.syncHomeRole,
+          onSessionModeChanged: context.navigator.syncHomeSessionMode,
+        ),
+      ),
+    ),
   );
 }

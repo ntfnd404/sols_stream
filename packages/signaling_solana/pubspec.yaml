@@ -16,8 +16,6 @@ dependencies:
     path: ../signaling
   solana_wallet:
     path: ../solana_wallet
-  wallet:
-    path: ../wallet
 
 dev_dependencies:
   test: ^1.25.0

@@ -18,9 +18,15 @@ final class HubRoute extends AppRoute {
   Page<Object?> buildPage(BuildContext context) => MaterialPage<void>(
     key: pageKey,
     child: HubScreen(
-      onStream: () => context.navigator.toHome(HomeIntent.stream),
-      onP2PCall: () => context.navigator.toHome(HomeIntent.p2pCall),
-      onJoinRoom: () => context.navigator.toHome(HomeIntent.joinRoom),
+      onStream: null,
+      onP2PCall: () => context.navigator.toHome(
+        sessionMode: SessionMode.p2p,
+        webRtcRole: WebRtcRole.publisher,
+      ),
+      onJoinRoom: () => context.navigator.toHome(
+        sessionMode: SessionMode.p2p,
+        webRtcRole: WebRtcRole.viewer,
+      ),
       onAccount: context.navigator.toAccount,
     ),
   );

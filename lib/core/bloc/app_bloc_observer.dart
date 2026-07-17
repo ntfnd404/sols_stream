@@ -1,7 +1,8 @@
 import 'dart:developer';
 
-import 'package:action_bloc/action_bloc.dart';
+import 'package:ephemeral_bloc/ephemeral_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sols_stream/core/security/redactor.dart';
 
 /// Observes all BLoC instances in the app.
 ///
@@ -10,11 +11,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// here before reaching crash reporters (Sentry, Firebase Crashlytics).
 ///
 /// Registered in [AppBootstrap.initialize].
-final class AppBlocObserver extends BlocObserver with ActionBlocObserver {
+final class AppBlocObserver extends BlocObserver with EphemeralBlocObserver {
   @override
   void onEvent(Bloc<Object?, Object?> bloc, Object? event) {
     log(
-      '${bloc.runtimeType}: $event',
+      '${bloc.runtimeType}: ${event.runtimeType}',
       name: 'BlocObserver.event',
     );
 
@@ -22,9 +23,9 @@ final class AppBlocObserver extends BlocObserver with ActionBlocObserver {
   }
 
   @override
-  void onAction(BlocBase<Object?> bloc, ActionChange<Object?> change) {
+  void onAction(BlocBase<Object?> bloc, EphemeralBlocChange<Object?> change) {
     log(
-      '${bloc.runtimeType}: ${change.current}',
+      '${bloc.runtimeType}: ${change.current.runtimeType}',
       name: 'BlocObserver.action',
     );
   }
@@ -32,7 +33,7 @@ final class AppBlocObserver extends BlocObserver with ActionBlocObserver {
   @override
   void onError(BlocBase<Object?> bloc, Object error, StackTrace stackTrace) {
     log(
-      '${bloc.runtimeType}: $error\n$stackTrace',
+      '${bloc.runtimeType}: ${Redactor.redact(error)}\n$stackTrace',
       name: 'BlocObserver',
       level: 1000,
     );

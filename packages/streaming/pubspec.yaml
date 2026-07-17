@@ -1,0 +1,19 @@
+name: streaming
+description: HLS playback and streaming runtime for sols.stream.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.12.2
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  video_player: 2.11.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

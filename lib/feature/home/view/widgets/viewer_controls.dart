@@ -6,36 +6,55 @@ class ViewerControls extends StatelessWidget {
     super.key,
     required this.connectionLinkController,
     required this.connecting,
+    required this.connected,
     required this.onConnect,
   });
 
   final TextEditingController connectionLinkController;
   final bool connecting;
+  final bool connected;
   final VoidCallback onConnect;
+
+  Widget _buildIcon() {
+    if (connecting) {
+      return const SizedBox.square(
+        dimension: 16,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    if (connected) return const Icon(Icons.check_circle_outline);
+
+    return const Icon(Icons.call);
+  }
+
+  String _label() {
+    if (connecting) return 'Connecting…';
+    if (connected) return 'Connected';
+
+    return 'Connect';
+  }
 
   @override
   Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LabeledField(
-            label: 'Connection link',
-            child: TextField(
-              controller: connectionLinkController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'sols://connect?host=…',
-              ),
-            ),
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      LabeledField(
+        label: 'Publisher invite link',
+        child: TextField(
+          controller: connectionLinkController,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+            hintText: 'https://…/home?intent=p2p&role=viewer&host=…',
+            helperText: 'Paste the invite link copied from the publisher.',
           ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: connecting ? null : onConnect,
-            icon: connecting
-                ? const SizedBox.square(
-                    dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.call),
-            label: Text(connecting ? 'Connecting…' : 'Connect'),
-          ),
-        ],
-      );
+        ),
+      ),
+      const SizedBox(height: 12),
+      FilledButton.icon(
+        onPressed: (connecting || connected) ? null : onConnect,
+        icon: _buildIcon(),
+        label: Text(_label()),
+      ),
+    ],
+  );
 }

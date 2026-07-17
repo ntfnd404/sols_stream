@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:sols_stream/feature/home/view/enums/web_rtc_role.dart';
+import 'package:sols_stream/feature/home/model/session_mode.dart';
+import 'package:sols_stream/feature/home/model/web_rtc_role.dart';
 
 class WebRtcControls extends StatelessWidget {
   const WebRtcControls({
     super.key,
     required this.role,
     required this.onRoleChanged,
+    required this.sessionMode,
+    required this.onSessionModeChanged,
     required this.hasLocalStream,
     required this.publisherControls,
     required this.viewerControls,
@@ -15,6 +18,8 @@ class WebRtcControls extends StatelessWidget {
 
   final WebRtcRole role;
   final ValueChanged<WebRtcRole> onRoleChanged;
+  final SessionMode sessionMode;
+  final ValueChanged<SessionMode> onSessionModeChanged;
   final bool hasLocalStream;
   final Widget publisherControls;
   final Widget viewerControls;
@@ -32,6 +37,24 @@ class WebRtcControls extends StatelessWidget {
         ],
         selected: {role},
         onSelectionChanged: (v) => onRoleChanged(v.first),
+      ),
+      const SizedBox(height: 12),
+      SegmentedButton<SessionMode>(
+        segments: const [
+          ButtonSegment(
+            value: SessionMode.p2p,
+            label: Text('P2P'),
+            icon: Icon(Icons.people),
+          ),
+          ButtonSegment(
+            value: SessionMode.stream,
+            label: Text('Stream (soon)'),
+            icon: Icon(Icons.stream),
+            enabled: false,
+          ),
+        ],
+        selected: {sessionMode},
+        onSelectionChanged: (value) => onSessionModeChanged(value.first),
       ),
       const SizedBox(height: 16),
       if (role == WebRtcRole.publisher) publisherControls else viewerControls,

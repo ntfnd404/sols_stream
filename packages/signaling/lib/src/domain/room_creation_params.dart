@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// Parameters for creating an on-chain signaling room.
 ///
 /// The sols.stream program's `create_room` instruction already carries room
@@ -49,8 +51,12 @@ class RoomCreationParams {
     required int pricePerMinute,
     required int pricePerSession,
   }) {
-    if (title.isEmpty || title.length > maxTitleLength) {
-      throw ArgumentError.value(title, 'title', 'must be 1..$maxTitleLength chars');
+    if (title.isEmpty || utf8.encode(title).length > maxTitleLength) {
+      throw ArgumentError.value(
+        title,
+        'title',
+        'must be 1..$maxTitleLength UTF-8 bytes',
+      );
     }
     _checkU8(category, 'category');
     _checkU8(accessMode, 'accessMode');
@@ -77,14 +83,26 @@ class RoomCreationParams {
     required this.pricePerSession,
   });
 
-  /// The current default: a public, free, P2P room — the app's only mode today.
-  /// Built from known-valid constants, so it bypasses runtime validation.
+  /// Public, free, P2P room.
+  /// `connectionMode=1` matches the web client `CONNECTION_MODE.P2P`.
   const RoomCreationParams.p2pFree()
     : this._(
-        title: 'p2p',
+        title: 'Live Stream',
         category: 0,
         accessMode: 0,
         connectionMode: 1,
+        pricePerMinute: 0,
+        pricePerSession: 0,
+      );
+
+  /// Public, free, Stream room.
+  /// `connectionMode=0` matches the web client `CONNECTION_MODE.Stream`.
+  const RoomCreationParams.streamFree()
+    : this._(
+        title: 'Live Stream',
+        category: 0,
+        accessMode: 0,
+        connectionMode: 0,
         pricePerMinute: 0,
         pricePerSession: 0,
       );

@@ -25,23 +25,32 @@ class RecordingReclaimGateway implements SignalingReclaimGateway {
   });
 
   @override
-  Future<void> closeConnectSlot({required String slotPda, String? viewer}) async {
+  Future<ReclaimOutcome> closeConnectSlot({
+    required String slotPda,
+    String? viewer,
+  }) async {
     closedSlots.add((slotPda: slotPda, viewer: viewer));
     calls.add('closeConnectSlot:$slotPda');
     if (throwOnCloseConnectSlot != null) throw throwOnCloseConnectSlot!;
+
+    return ReclaimOutcome.succeeded;
   }
 
   @override
-  Future<void> endRoom({required String roomPda}) async {
+  Future<ReclaimOutcome> endRoom({required String roomPda}) async {
     endedRooms.add(roomPda);
     calls.add('endRoom:$roomPda');
     if (throwOnEndRoom != null) throw throwOnEndRoom!;
+
+    return ReclaimOutcome.succeeded;
   }
 
   @override
-  Future<void> closeRoom({required String roomPda}) async {
+  Future<ReclaimOutcome> closeRoom({required String roomPda}) async {
     closedRooms.add(roomPda);
     calls.add('closeRoom:$roomPda');
     if (throwOnCloseRoom != null) throw throwOnCloseRoom!;
+
+    return ReclaimOutcome.succeeded;
   }
 }

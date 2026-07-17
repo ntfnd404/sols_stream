@@ -9,35 +9,35 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Profile')),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: <Widget>[
-            const ListTile(
-              leading: Icon(Icons.person_outline),
-              title: Text('Display name'),
-              subtitle: Text('sols.stream user'),
-            ),
-            const ListTile(
-              leading: Icon(Icons.key_outlined),
-              title: Text('Wallet'),
-              subtitle: Text('Connected'),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Sign out'),
-              subtitle: const Text('Dialog-as-route demo (returns a result)'),
-              onTap: () async {
-                final confirmed = await context.navigator.confirm('Sign out of sols.stream?');
-                if ((confirmed ?? false) && context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Signed out')),
-                  );
-                }
-              },
-            ),
-          ],
+    appBar: AppBar(title: const Text('Profile')),
+    body: ListView(
+      padding: const EdgeInsets.all(16),
+      children: <Widget>[
+        const ListTile(
+          leading: Icon(Icons.person_outline),
+          title: Text('Display name'),
+          subtitle: Text('sols.stream user'),
         ),
-      );
+        const ListTile(
+          leading: Icon(Icons.key_outlined),
+          title: Text('Wallet'),
+          subtitle: Text('Connected'),
+        ),
+        const Divider(),
+        ListTile(
+          leading: const Icon(Icons.logout),
+          title: const Text('Sign out'),
+          subtitle: const Text('Dialog-as-route demo (returns a result)'),
+          onTap: () async {
+            final confirmed = await context.navigator.confirm('Sign out of sols.stream?');
+            if ((confirmed ?? false) && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Signed out')),
+              );
+            }
+          },
+        ),
+      ],
+    ),
+  );
 }

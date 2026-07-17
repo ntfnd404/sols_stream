@@ -22,17 +22,17 @@ class AccountShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: IndexedStack(
-          index: activeTab.index,
-          children: <Widget>[const ProfileScreen(), settingsTab],
-        ),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: activeTab.index,
-          onDestinationSelected: (index) => onSelectTab(AccountTab.values[index]),
-          destinations: const <NavigationDestination>[
-            NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
-            NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Settings'),
-          ],
-        ),
-      );
+    body: IndexedStack(
+      index: activeTab.index,
+      children: <Widget>[const ProfileScreen(), settingsTab],
+    ),
+    bottomNavigationBar: NavigationBar(
+      selectedIndex: activeTab.index,
+      onDestinationSelected: (index) => onSelectTab(AccountTab.values[index]),
+      destinations: const <NavigationDestination>[
+        NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
+        NavigationDestination(icon: Icon(Icons.settings_outlined), label: 'Settings'),
+      ],
+    ),
+  );
 }

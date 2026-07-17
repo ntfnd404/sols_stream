@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sols_stream/feature/home/view/enums/transport_mode.dart';
+import 'package:sols_stream/feature/home/model/transport_mode.dart';
 
 class ControlSection extends StatelessWidget {
   const ControlSection({
@@ -9,6 +9,7 @@ class ControlSection extends StatelessWidget {
     required this.webRtcControls,
     required this.hlsControls,
     required this.walletTile,
+    this.scrollable = true,
   });
 
   final TransportMode transportMode;
@@ -16,10 +17,11 @@ class ControlSection extends StatelessWidget {
   final Widget webRtcControls;
   final Widget hlsControls;
   final Widget walletTile;
+  final bool scrollable;
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    child: Column(
+  Widget build(BuildContext context) {
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SegmentedButton<TransportMode>(
@@ -35,6 +37,8 @@ class ControlSection extends StatelessWidget {
         const SizedBox(height: 16),
         walletTile,
       ],
-    ),
-  );
+    );
+
+    return scrollable ? SingleChildScrollView(child: content) : content;
+  }
 }

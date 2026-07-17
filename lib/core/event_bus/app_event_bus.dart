@@ -1,13 +1,11 @@
 import 'dart:async';
 
-import 'package:sols_stream/core/event_bus/domain_event.dart';
+import 'package:sols_stream/core/event_bus/app_event.dart';
 
-/// In-process broadcast bus for application-level domain events.
+/// In-process broadcast bus for cross-feature application events.
 ///
-/// Use this for decoupled notifications between independently owned parts of
-/// an application. Event producers publish immutable [DomainEvent] objects with
-/// [emit], and consumers subscribe to the event type they care about with
-/// [on<T>].
+/// Event producers publish immutable [AppEvent] objects with [emit], and
+/// consumers subscribe to the event type they care about with [on<T>].
 ///
 /// The bus is intentionally a regular object, not a global singleton. Create it
 /// in the application's composition root and pass it through dependency
@@ -19,30 +17,14 @@ import 'package:sols_stream/core/event_bus/domain_event.dart';
 ///
 /// Example:
 /// ```dart
-/// sealed class ItemDomainEvent extends DomainEvent {
-///   const ItemDomainEvent();
-/// }
-///
-/// final class ItemCreated extends ItemDomainEvent {
-///   final String itemId;
-///
-///   const ItemCreated(this.itemId);
-/// }
-///
-/// eventBus.emit(const ItemCreated('item-1'));
-///
-/// final subscription = eventBus.on<ItemCreated>().listen((event) {
-///   // React to event.itemId.
-/// });
-///
-/// await subscription.cancel();
+/// final subscription = eventBus.on<FeatureChangedAppEvent>().listen(...);
 /// ```
 final class AppEventBus {
-  final _controller = StreamController<DomainEvent>.broadcast();
+  final _controller = StreamController<AppEvent>.broadcast();
 
-  Stream<T> on<T extends DomainEvent>() => _controller.stream.where((e) => e is T).cast<T>();
+  Stream<T> on<T extends AppEvent>() => _controller.stream.where((event) => event is T).cast<T>();
 
-  void emit(DomainEvent event) => _controller.add(event);
+  void emit(AppEvent event) => _controller.add(event);
 
-  void dispose() => _controller.close();
+  Future<void> dispose() => _controller.close();
 }

@@ -4,13 +4,23 @@ import 'dart:typed_data';
 /// signaling domain reasons about today.
 ///
 /// Translated from the wire DTO `ProgramConfigAccount` by `ProgramConfigMapper`
-/// in the data layer. The governance authority, pricing/heartbeat parameters,
-/// and PDA `bump` stay on the wire DTO — they are not needed by the reclaim
-/// flow, which only routes the contract-mandated 1% skim to [serviceWallet].
+/// in the data layer. Pricing fields, governance authority, heartbeat TTL, and
+/// PDA `bump` stay on the wire DTO until a phase needs them.
 class ProgramConfig {
   /// Wallet that must be passed as the skim recipient on every close/cleanup
   /// instruction. Read from chain, never hardcoded.
   final Uint8List serviceWallet;
 
-  const ProgramConfig({required this.serviceWallet});
+  /// Lamports charged by the program when purchasing TURN entitlement.
+  final BigInt turnPriceLamports;
+
+  /// Minimum allowed heartbeat interval, in seconds, as configured on-chain.
+  /// A zero value means callers should fall back to their conservative default.
+  final int minHeartbeatIntervalSeconds;
+
+  const ProgramConfig({
+    required this.serviceWallet,
+    required this.turnPriceLamports,
+    required this.minHeartbeatIntervalSeconds,
+  });
 }

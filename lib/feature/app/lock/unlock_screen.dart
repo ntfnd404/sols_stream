@@ -9,21 +9,21 @@ class UnlockScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Locked')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const Icon(Icons.lock_outline, size: 64),
-              const SizedBox(height: 16),
-              const Text('Account is locked'),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => LockScope.of(context).unlock(),
-                child: const Text('Unlock'),
-              ),
-            ],
+    appBar: AppBar(title: const Text('Locked')),
+    body: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          const Icon(Icons.lock_outline, size: 64),
+          const SizedBox(height: 16),
+          const Text('Account is locked'),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: () => LockScope.of(context).unlock(),
+            child: const Text('Unlock'),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }

@@ -1,3 +1,5 @@
+import 'package:signaling/src/application/reclaim_outcome.dart';
+
 /// Port for reclaiming on-chain deposits left by a slot/room — the
 /// `close_connect_slot` / `end_room` / `close_room` instructions of the
 /// sols.stream signaling program.
@@ -6,7 +8,8 @@
 /// capability with a money-moving trust boundary (the program skims a mandated
 /// 1% to the on-chain service wallet and refunds the rest pro-rata). The default
 /// binding is [UnsupportedSignalingReclaimGateway] (Null Object); the real
-/// Solana implementation is wired in `SignalingAssembly`.
+/// Solana implementation is wired by the application composition root through
+/// `SignalingSolanaAssembly`.
 ///
 /// Every method is **best-effort and idempotent**: an already-closed/absent
 /// account completes without throwing, so callers can run reclaim
@@ -24,19 +27,19 @@ abstract interface class SignalingReclaimGateway {
   /// call-surface parameter (a caller must never be able to redirect the skim).
   ///
   /// `close_connect_slot` takes no room account, so [roomPda] is intentionally
-  /// not a parameter (see `reference/program-client.js`).
-  Future<void> closeConnectSlot({
+  /// not a parameter (matching the external web client contract).
+  Future<ReclaimOutcome> closeConnectSlot({
     required String slotPda,
     String? viewer,
   });
 
   /// Marks the room not-live (`end_room`). Idempotent on already-ended rooms.
   /// Must precede [closeRoom]. Only the host may call this.
-  Future<void> endRoom({required String roomPda});
+  Future<ReclaimOutcome> endRoom({required String roomPda});
 
   /// Reclaims room rent to the host (`close_room`). Must run after [endRoom] and
   /// after every slot is closed. Idempotent on already-closed rooms.
-  Future<void> closeRoom({required String roomPda});
+  Future<ReclaimOutcome> closeRoom({required String roomPda});
 }
 
 /// Null Object binding: reclaim disabled. Calls are no-ops so the compensation
@@ -47,11 +50,18 @@ final class UnsupportedSignalingReclaimGateway implements SignalingReclaimGatewa
   const UnsupportedSignalingReclaimGateway();
 
   @override
-  Future<void> closeConnectSlot({required String slotPda, String? viewer}) async {}
+  Future<ReclaimOutcome> closeConnectSlot({
+    required String slotPda,
+    String? viewer,
+  }) async => ReclaimOutcome.disabled;
 
   @override
-  Future<void> endRoom({required String roomPda}) async {}
+  Future<ReclaimOutcome> endRoom({
+    required String roomPda,
+  }) async => ReclaimOutcome.disabled;
 
   @override
-  Future<void> closeRoom({required String roomPda}) async {}
+  Future<ReclaimOutcome> closeRoom({
+    required String roomPda,
+  }) async => ReclaimOutcome.disabled;
 }

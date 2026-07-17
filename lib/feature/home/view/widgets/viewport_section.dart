@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sols_stream/feature/home/view/enums/transport_mode.dart';
+import 'package:sols_stream/feature/home/model/transport_mode.dart';
 
 class ViewportSection extends StatelessWidget {
   const ViewportSection({
@@ -16,6 +16,7 @@ class ViewportSection extends StatelessWidget {
     required this.onToggleCamera,
     required this.onTogglePip,
     this.status,
+    this.diagnostics,
   });
 
   final String rtcState;
@@ -30,6 +31,7 @@ class ViewportSection extends StatelessWidget {
   final VoidCallback onToggleCamera;
   final ValueChanged<bool> onTogglePip;
   final String? status;
+  final String? diagnostics;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -66,11 +68,18 @@ class ViewportSection extends StatelessWidget {
           ],
         ],
       ),
-      if (status != null) ...[
+      if (status case final status?) ...[
         const SizedBox(height: 8),
         SelectableText(
-          status!,
+          status,
           style: TextStyle(color: Theme.of(context).colorScheme.secondary),
+        ),
+      ],
+      if (diagnostics case final diagnostics?) ...[
+        const SizedBox(height: 6),
+        SelectableText(
+          'Media: $diagnostics',
+          style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
     ],

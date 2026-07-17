@@ -3,6 +3,8 @@ import 'dart:developer';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sols_stream/core/bloc/app_bloc_observer.dart';
+import 'package:sols_stream/core/bootstrap/url_strategy.dart';
+import 'package:sols_stream/core/security/redactor.dart';
 
 /// One-time framework-level initialization performed before [runApp].
 ///
@@ -30,10 +32,11 @@ final class AppBootstrap {
   /// Synchronous for now. Will become `Future<void>` once async initializations
   /// (Sentry, Firebase) are added — update [main] to `await` it at that point.
   ///
-  /// Must be called inside `runZonedGuarded` before
-  /// [AppDependenciesBuilder.create].
+  /// Must be called once inside `runZonedGuarded` before
+  /// `AppDependenciesBuilder.build`.
   static void initialize() {
     WidgetsFlutterBinding.ensureInitialized();
+    configureUrlStrategy();
     _initBlocObserver();
 
     // TODO(ntfnd404): await _initSentry();
@@ -45,7 +48,7 @@ final class AppBootstrap {
       Bloc.observer = AppBlocObserver();
     } catch (e, stack) {
       log(
-        'BlocObserver init failed: $e\n$stack',
+        'BlocObserver init failed: ${Redactor.redact(e)}\n$stack',
         name: 'AppBootstrap',
         level: 1000,
       );

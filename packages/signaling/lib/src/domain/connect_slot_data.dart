@@ -14,6 +14,15 @@ class ConnectSlotData {
   final Uint8List room;
   final Uint8List host;
   final Uint8List viewer;
+
+  /// Host's on-chain protected passphrase key (UTF-8 string bytes). Sent to the
+  /// key broker to release the offer passphrase when joining an on-chain peer
+  /// call.
+  final Uint8List hostProtectedKey;
+
+  /// Viewer's protected passphrase key - the answer-direction counterpart of
+  /// [hostProtectedKey].
+  final Uint8List viewerProtectedKey;
   final Uint8List offerData;
   final Uint8List answerData;
   final ConnectSlotState state;
@@ -53,6 +62,8 @@ class ConnectSlotData {
     required this.room,
     required this.host,
     required this.viewer,
+    required this.hostProtectedKey,
+    required this.viewerProtectedKey,
     required this.offerData,
     required this.answerData,
     required this.state,

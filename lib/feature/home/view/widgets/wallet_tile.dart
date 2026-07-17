@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:solana_wallet/solana_wallet.dart';
 
 class WalletTile extends StatefulWidget {
   const WalletTile({
     super.key,
-    required this.walletAccount,
+    required this.walletAddress,
     required this.walletBalance,
     required this.onRefresh,
   });
 
-  final WalletAccount? walletAccount;
+  final String? walletAddress;
   final int walletBalance;
   final VoidCallback onRefresh;
 
@@ -23,10 +22,9 @@ class _WalletTileState extends State<WalletTile> {
 
   @override
   Widget build(BuildContext context) {
-    final account = widget.walletAccount;
-    if (account == null) return const SizedBox.shrink();
+    final address = widget.walletAddress;
+    if (address == null) return const SizedBox.shrink();
 
-    final address = account.address;
     final shortAddr = address.length > 12
         ? '${address.substring(0, 6)}…${address.substring(address.length - 4)}'
         : address;
@@ -44,8 +42,14 @@ class _WalletTileState extends State<WalletTile> {
           children: [
             const Icon(Icons.account_balance_wallet, size: 18),
             const SizedBox(width: 8),
-            Text('Wallet · $shortAddr'),
-            const Spacer(),
+            Expanded(
+              child: Text(
+                'Wallet · $shortAddr',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
             Text('${solBalance.toStringAsFixed(4)} SOL'),
           ],
         ),

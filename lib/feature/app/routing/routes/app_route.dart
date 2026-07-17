@@ -11,7 +11,10 @@ import 'package:sols_stream/feature/app/lock/unlock_screen.dart';
 import 'package:sols_stream/feature/app/routing/app_navigator.dart';
 import 'package:sols_stream/feature/app/view/confirm_dialog.dart';
 import 'package:sols_stream/feature/app/view/not_found_screen.dart';
-import 'package:sols_stream/feature/home/view/enums/home_intent.dart';
+import 'package:sols_stream/feature/call/di/call_scope.dart';
+import 'package:sols_stream/feature/home/di/home_scope.dart';
+import 'package:sols_stream/feature/home/model/session_mode.dart';
+import 'package:sols_stream/feature/home/model/web_rtc_role.dart';
 import 'package:sols_stream/feature/home/view/home_screen.dart';
 import 'package:sols_stream/feature/hub/view/hub_screen.dart';
 

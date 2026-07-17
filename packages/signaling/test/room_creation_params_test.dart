@@ -19,10 +19,11 @@ RoomCreationParams _params({
 
 void main() {
   group('RoomCreationParams', () {
-    test('p2pFree is a public, free, P2P room', () {
+    test('p2pFree is a public, free P2P room', () {
       const params = RoomCreationParams.p2pFree();
 
       expect(params.accessMode, 0);
+      // connectionMode=1 matches JS CONNECTION_MODE.P2P (program-client.js:104).
       expect(params.connectionMode, 1);
       expect(params.pricePerMinute, 0);
       expect(params.pricePerSession, 0);
@@ -43,6 +44,17 @@ void main() {
       expect(
         () => _params(title: 'x' * (RoomCreationParams.maxTitleLength + 1)),
         throwsArgumentError,
+      );
+    });
+
+    test('measures the title limit in UTF-8 bytes', () {
+      expect(
+        () => _params(title: '😀' * 17),
+        throwsArgumentError,
+      );
+      expect(
+        () => _params(title: '😀' * 16),
+        returnsNormally,
       );
     });
 
