@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:mocktail/mocktail.dart';
 import 'package:solana/dto.dart';
 import 'package:solana/solana.dart';
-import 'package:solana_wallet/solana_signer.dart';
+import 'package:solana_wallet/solana_wallet.dart';
 import 'package:solana_wallet/src/data/solana_wallet.dart';
 import 'package:test/test.dart';
 
@@ -50,6 +50,41 @@ void main() {
 
     expect(await wallet.ensureFunded(), isTrue);
     verify(() => funding.ensureFunded(keypair.publicKey.toBase58())).called(1);
+  });
+
+  test('sanitizes balance provider failures and preserves their stack', () async {
+    const secret = 'https://rpc.example/?token=secret response-body';
+    late StackTrace providerStack;
+    when(
+      () => rpc.getBalance(
+        any(),
+        commitment: Commitment.confirmed,
+      ),
+    ).thenAnswer((_) {
+      providerStack = StackTrace.current;
+      Error.throwWithStackTrace(Exception(secret), providerStack);
+    });
+
+    try {
+      await wallet.getBalanceLamports();
+      fail('Expected a wallet read failure');
+    } on SolanaWalletReadException catch (error, stackTrace) {
+      expect(error.toString(), 'SolanaWalletReadException');
+      expect(error.toString(), isNot(contains(secret)));
+      expect(stackTrace.toString(), providerStack.toString());
+    }
+  });
+
+  test('does not mask programming errors while reading balance', () async {
+    final failure = StateError('programming defect');
+    when(
+      () => rpc.getBalance(
+        any(),
+        commitment: Commitment.confirmed,
+      ),
+    ).thenThrow(failure);
+
+    await expectLater(wallet.getBalanceLamports(), throwsA(same(failure)));
   });
 
   test('signs, sends once, and returns only after confirmation', () async {

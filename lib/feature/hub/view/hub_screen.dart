@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:solana_wallet/solana_wallet.dart';
 import 'package:sols_stream/core/di/app_scope.dart';
-import 'package:sols_stream/core/security/redactor.dart';
+import 'package:sols_stream/core/security/safe_error_formatter.dart';
 
 class HubScreen extends StatefulWidget {
   const HubScreen({
@@ -36,8 +36,15 @@ class _HubScreenState extends State<HubScreen> {
       final balance = await reader.getBalanceLamports();
       if (!mounted) return;
       setState(() => _balanceLamports = balance);
-    } on Exception catch (e) {
-      log('Balance fetch failed: ${Redactor.redact(e)}', name: 'HubScreen');
+    } on SolanaWalletReadException catch (error, stackTrace) {
+      log(
+        formatSafeError(
+          error,
+          context: 'Balance fetch',
+          stackTrace: stackTrace,
+        ),
+        name: 'HubScreen',
+      );
     } finally {
       if (mounted) setState(() => _loadingBalance = false);
     }

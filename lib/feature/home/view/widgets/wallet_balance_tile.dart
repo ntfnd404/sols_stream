@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:solana_wallet/solana_wallet.dart';
 import 'package:sols_stream/core/di/app_scope.dart';
-import 'package:sols_stream/core/security/redactor.dart';
+import 'package:sols_stream/core/security/safe_error_formatter.dart';
 import 'package:sols_stream/feature/home/view/widgets/wallet_tile.dart';
 
 class WalletBalanceTile extends StatefulWidget {
@@ -28,8 +28,15 @@ class _WalletBalanceTileState extends State<WalletBalanceTile> {
       if (!mounted) return;
 
       _balance.value = balance;
-    } on Exception catch (e) {
-      log('Balance refresh failed: ${Redactor.redact(e)}', name: 'WalletBalanceTile');
+    } on SolanaWalletReadException catch (error, stackTrace) {
+      log(
+        formatSafeError(
+          error,
+          context: 'Balance refresh',
+          stackTrace: stackTrace,
+        ),
+        name: 'WalletBalanceTile',
+      );
     }
   }
 

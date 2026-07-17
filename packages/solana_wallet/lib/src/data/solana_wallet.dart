@@ -7,6 +7,7 @@ import 'package:solana_wallet/src/data/solana_transaction_confirmer.dart';
 import 'package:solana_wallet/src/domain/solana_funding_service.dart';
 import 'package:solana_wallet/src/domain/solana_signer.dart';
 import 'package:solana_wallet/src/domain/solana_transaction_exception.dart';
+import 'package:solana_wallet/src/domain/solana_wallet_read_exception.dart';
 import 'package:solana_wallet/src/domain/solana_wallet_reader.dart';
 
 /// Data-layer adapter implementing the wallet's published ports over a Solana
@@ -37,9 +38,19 @@ final class SolanaWallet implements SolanaSigner, SolanaWalletReader, SolanaFund
 
   @override
   Future<int> getBalanceLamports() async {
-    final balance = await _rpc.getBalance(address, commitment: Commitment.confirmed);
+    try {
+      final balance = await _rpc.getBalance(
+        address,
+        commitment: Commitment.confirmed,
+      );
 
-    return balance.value;
+      return balance.value;
+    } on Exception catch (_, stackTrace) {
+      Error.throwWithStackTrace(
+        const SolanaWalletReadException(),
+        stackTrace,
+      );
+    }
   }
 
   @override

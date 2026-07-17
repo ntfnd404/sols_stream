@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:ephemeral_bloc/ephemeral_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sols_stream/core/security/redactor.dart';
+import 'package:sols_stream/core/security/safe_error_formatter.dart';
 
 /// Observes all BLoC instances in the app.
 ///
@@ -33,13 +33,17 @@ final class AppBlocObserver extends BlocObserver with EphemeralBlocObserver {
   @override
   void onError(BlocBase<Object?> bloc, Object error, StackTrace stackTrace) {
     log(
-      '${bloc.runtimeType}: ${Redactor.redact(error)}\n$stackTrace',
+      formatSafeError(
+        error,
+        context: bloc.runtimeType.toString(),
+        stackTrace: stackTrace,
+      ),
       name: 'BlocObserver',
       level: 1000,
     );
 
-    // TODO(ntfnd404): SS-XXXX — forward to crash reporter, e.g.:
-    // Sentry.captureException(error, stackTrace: stackTrace);
+    // Future reporters must receive an allowlisted normalized failure rather
+    // than the original error object.
 
     super.onError(bloc, error, stackTrace);
   }
