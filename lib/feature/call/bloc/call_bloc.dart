@@ -112,7 +112,7 @@ final class CallBloc extends Bloc<CallEvent, CallState> with EphemeralBlocMixin<
 
     _recordLog('publisher.invite.regeneration.started');
     await _disconnect(emit);
-    if (isClosed) return;
+    if (emit.isDone) return;
 
     await _startPublisher(
       rtcConfiguration: event.rtcConfiguration,
@@ -173,7 +173,7 @@ final class CallBloc extends Bloc<CallEvent, CallState> with EphemeralBlocMixin<
         message: 'Go Live failed. Check your wallet and connection.',
       );
       await _disposeMediaBestEffort();
-      if (isClosed) return;
+      if (emit.isDone) return;
 
       emit(
         state.copyWith(
@@ -352,7 +352,7 @@ final class CallBloc extends Bloc<CallEvent, CallState> with EphemeralBlocMixin<
     // transaction that returns the host's User PDA to Idle.
     await _disposeMediaBestEffort();
     await _reclaimDeposits();
-    if (isClosed) return;
+    if (emit.isDone) return;
 
     emit(
       state.copyWith(
@@ -540,7 +540,7 @@ final class CallBloc extends Bloc<CallEvent, CallState> with EphemeralBlocMixin<
       message: 'Signaling failed. Check the wallet balance and connection, then start a new call.',
     );
     await _disconnect(emit);
-    if (isClosed) return;
+    if (emit.isDone) return;
 
     emit(
       state.copyWith(
