@@ -15,12 +15,6 @@ abstract final class Redactor {
     'token',
   };
 
-  static String redact(Object? value) {
-    if (value == null) return 'null';
-
-    return redactText(value.toString());
-  }
-
   static String redactText(String value) {
     var result = value;
     result = result.replaceAllMapped(

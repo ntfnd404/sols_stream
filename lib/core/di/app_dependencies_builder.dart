@@ -88,11 +88,6 @@ base class AppDependenciesBuilder {
       ),
       (assembly) => assembly.dispose(),
     );
-    log(
-      'address=${wallet.reader.address}',
-      name: 'Wallet',
-    );
-
     final keyBroker = resourceDisposalStack.register(
       KeyBrokerAssembly.create(_environment.keyBroker.config),
       (assembly) => assembly.dispose(),

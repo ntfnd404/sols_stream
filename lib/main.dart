@@ -31,7 +31,11 @@ void main() => runZonedGuarded(
 );
 
 void _onError(Object error, StackTrace stack) => log(
-  formatSafeError(error, stackTrace: stack),
+  safeErrorFormatter.format(
+    error,
+    context: SafeDiagnosticContext.rootZone,
+    stackTrace: stack,
+  ),
   name: 'main',
   level: 1000,
 );

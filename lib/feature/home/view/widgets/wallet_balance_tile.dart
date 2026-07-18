@@ -30,9 +30,9 @@ class _WalletBalanceTileState extends State<WalletBalanceTile> {
       _balance.value = balance;
     } on SolanaWalletReadException catch (error, stackTrace) {
       log(
-        formatSafeError(
+        safeErrorFormatter.format(
           error,
-          context: 'Balance refresh',
+          context: SafeDiagnosticContext.walletBalance,
           stackTrace: stackTrace,
         ),
         name: 'WalletBalanceTile',

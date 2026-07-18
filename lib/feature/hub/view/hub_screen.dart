@@ -38,9 +38,9 @@ class _HubScreenState extends State<HubScreen> {
       setState(() => _balanceLamports = balance);
     } on SolanaWalletReadException catch (error, stackTrace) {
       log(
-        formatSafeError(
+        safeErrorFormatter.format(
           error,
-          context: 'Balance fetch',
+          context: SafeDiagnosticContext.walletBalance,
           stackTrace: stackTrace,
         ),
         name: 'HubScreen',

@@ -33,9 +33,10 @@ final class AppBlocObserver extends BlocObserver with EphemeralBlocObserver {
   @override
   void onError(BlocBase<Object?> bloc, Object error, StackTrace stackTrace) {
     log(
-      formatSafeError(
+      safeErrorFormatter.format(
         error,
-        context: bloc.runtimeType.toString(),
+        context: SafeDiagnosticContext.blocObserver,
+        componentType: bloc.runtimeType,
         stackTrace: stackTrace,
       ),
       name: 'BlocObserver',

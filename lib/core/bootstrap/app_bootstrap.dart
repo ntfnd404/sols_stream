@@ -1,10 +1,7 @@
-import 'dart:developer';
-
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sols_stream/core/bloc/app_bloc_observer.dart';
 import 'package:sols_stream/core/bootstrap/url_strategy.dart';
-import 'package:sols_stream/core/security/safe_error_formatter.dart';
 
 /// One-time framework-level initialization performed before [runApp].
 ///
@@ -44,18 +41,6 @@ final class AppBootstrap {
   }
 
   static void _initBlocObserver() {
-    try {
-      Bloc.observer = AppBlocObserver();
-    } catch (e, stack) {
-      log(
-        formatSafeError(
-          e,
-          context: 'BlocObserver initialization',
-          stackTrace: stack,
-        ),
-        name: 'AppBootstrap',
-        level: 1000,
-      );
-    }
+    Bloc.observer = AppBlocObserver();
   }
 }
