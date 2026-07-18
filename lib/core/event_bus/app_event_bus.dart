@@ -13,7 +13,20 @@ import 'package:sols_stream/core/event_bus/app_event.dart';
 /// application scope is torn down.
 ///
 /// Subscribers own their subscriptions and must cancel them with the rest of
-/// their lifecycle.
+/// their lifecycle. During application teardown, producers stop first,
+/// consumers cancel their subscriptions next, and the application scope owner
+/// disposes the bus last. The bus does not force-cancel leaked or paused
+/// subscriptions.
+///
+/// Delivery is asynchronous and ordered per subscription. The bus has no
+/// replay, persistence, acknowledgement, or durable buffering. Events emitted
+/// before a subscriber listens are lost, and emitting after [dispose] throws a
+/// [StateError].
+///
+/// Listener failures belong to the subscriber's zone and do not stop delivery
+/// to other subscribers. The bus does not retry or confirm application-level
+/// handling. It must not carry financial outcomes or required workflow
+/// transitions.
 ///
 /// Example:
 /// ```dart
