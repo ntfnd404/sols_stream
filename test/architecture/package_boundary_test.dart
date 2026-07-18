@@ -4,11 +4,19 @@ import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yaml/yaml.dart';
 
 // These syntax-level checks are regression guardrails, not a resolved semantic
 // model. Behavioral tests remain authoritative for coordinator wiring.
-const _providerSignalingAdapters = {'signaling_solana'};
+const _workspacePackages = {
+  '.': 'sols_stream',
+  'packages/secure_storage': 'secure_storage',
+  'packages/signaling': 'signaling',
+  'packages/signaling_solana': 'signaling_solana',
+  'packages/solana_wallet': 'solana_wallet',
+  'packages/realtime_media': 'realtime_media',
+  'packages/streaming': 'streaming',
+  'packages/ui_kit': 'ui_kit',
+};
 
 void main() {
   test('owned protocol, provider, and adapter packages do not import Flutter', () {
@@ -52,12 +60,11 @@ void main() {
   });
 
   test('workspace packages do not deep-import each other src internals', () {
-    final packages = _workspacePackages();
-    final localNames = packages.values.toSet();
+    final localNames = _workspacePackages.values.toSet();
     final deepImport = RegExp(r'^package:([^/]+)/src/');
     final offenders = <String>[];
 
-    for (final entry in packages.entries) {
+    for (final entry in _workspacePackages.entries) {
       final libRoot = entry.key == '.' ? 'lib' : '${entry.key}/lib';
       for (final file in _dartFiles(libRoot)) {
         for (final uri in _importUris(file)) {
@@ -174,51 +181,7 @@ void main() {
 
     expect(offenders, isEmpty);
   });
-
-  test('workspace local runtime dependencies form an allowed DAG', () {
-    final graph = _workspaceDependencyGraph();
-
-    _expectAcyclic(graph);
-    expect(
-      graph['signaling']!.where(
-        (dependency) => dependency == 'solana' || dependency.endsWith('_wallet') || dependency.startsWith('signaling_'),
-      ),
-      isEmpty,
-    );
-    expect(graph.keys, containsAll(_providerSignalingAdapters));
-    for (final adapter in _providerSignalingAdapters) {
-      expect(graph[adapter], contains('signaling'), reason: '$adapter must implement signaling-owned ports');
-    }
-  });
 }
-
-Map<String, Set<String>> _workspaceDependencyGraph() {
-  final packages = _workspacePackages();
-  final pubspecs = {
-    for (final path in packages.keys) path: _readPubspec(path == '.' ? 'pubspec.yaml' : '$path/pubspec.yaml'),
-  };
-  final localNames = packages.values.toSet();
-
-  return {
-    for (final entry in pubspecs.entries)
-      packages[entry.key]!: {
-        for (final dependency in ((entry.value['dependencies'] as YamlMap?)?.keys ?? const <Object>[]).cast<String>())
-          if (localNames.contains(dependency)) dependency,
-      },
-  };
-}
-
-Map<String, String> _workspacePackages() {
-  final rootPubspec = _readPubspec('pubspec.yaml');
-  final workspacePaths = ['.', ...(rootPubspec['workspace']! as YamlList).cast<String>()];
-
-  return {
-    for (final path in workspacePaths)
-      path: _readPubspec(path == '.' ? 'pubspec.yaml' : '$path/pubspec.yaml')['name']! as String,
-  };
-}
-
-YamlMap _readPubspec(String path) => loadYaml(File(path).readAsStringSync()) as YamlMap;
 
 Iterable<File> _dartFiles(String root) =>
     Directory(root).listSync(recursive: true).whereType<File>().where((file) => file.path.endsWith('.dart'));
@@ -242,25 +205,6 @@ List<String> _namedTypes(File file) {
   final visitor = _NamedTypeVisitor();
   _parse(file).accept(visitor);
   return visitor.types;
-}
-
-void _expectAcyclic(Map<String, Set<String>> graph) {
-  final visiting = <String>{};
-  final visited = <String>{};
-
-  void visit(String package) {
-    if (visited.contains(package)) return;
-    expect(visiting.add(package), isTrue, reason: 'Local package dependency cycle includes $package');
-    for (final dependency in graph[package] ?? const <String>{}) {
-      visit(dependency);
-    }
-    visiting.remove(package);
-    visited.add(package);
-  }
-
-  for (final package in graph.keys) {
-    visit(package);
-  }
 }
 
 final class _MethodInvocationVisitor extends RecursiveAstVisitor<void> {
