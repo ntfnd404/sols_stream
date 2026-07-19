@@ -1,0 +1,31 @@
+services:
+  solana-node:
+    # image: solanalabs/solana:stable
+    # platform: linux/amd64   # ARM64 Mac: runs via Rosetta 2 emulation
+    image: solana-local:arm64   # build once: make node-build-arm64
+    stop_grace_period: 30s
+    ports:
+      - "127.0.0.1:8899:8899"   # JSON-RPC (same-host clients only)
+      - "127.0.0.1:8900:8900"   # WebSocket (RPC port + 1)
+    volumes:
+      - solana-ledger:/ledger
+    command: >
+      --url https://api.devnet.solana.com
+      --clone-upgradeable-program 8rYyL3AY3cb4XrFWfUokXKwQb8uU48XvuLAHNxTgdmXw
+      --clone 8G39qp7r5dQ3bUsvb7F7xTAsAKeD9yBNB5oLBtANUeUA
+      --ledger /ledger
+      --rpc-port 8899
+      --bind-address 0.0.0.0
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -sf http://localhost:8899 -H 'content-type: application/json' --data '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getSlot\",\"params\":[{\"commitment\":\"confirmed\"}]}' | grep -Eq '\"result\":[1-9][0-9]*'",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 30s
+
+volumes:
+  solana-ledger:
