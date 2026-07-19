@@ -91,11 +91,17 @@ Generating an aggregate ID is a use-case responsibility, not a repository concer
 
 - **BLoC only** — no Cubits (enforced by linter)
 - Events: past-tense user actions (`FeatureItemsRequested`, `ThemeChanged`)
-- State: hand-written immutable class with enum `status`. **Default recommendation** is `@freezed` for state classes; **project may override** to hand-written classes (no codegen) — this is a common, valid override and adapter consumers must check their project conventions before adopting freezed.
+- State: hand-written immutable class; use an enum `status` only when the UI has
+  meaningful process phases. This project does not use State code generation.
 - `abstract interface class` for interfaces; `Impl` suffix for implementations
-- **Never** store mutable state in private BLoC fields — all state in the State class
+- Observable changes are represented by new immutable State snapshots. Private
+  BLoC fields may own dependencies, subscriptions, timers, cancellation or
+  opaque runtime handles, but not presentation values that affect later
+  transitions without a new State emission.
 - **Never** expose public fields or methods on BLoC — all logic via events
-- Check `isClosed` before `emit()` after every async gap
+- Inside an asynchronous event handler, check `emit.isDone` before emitting
+  after an async gap. `isClosed` is a lifecycle check, not a substitute for the
+  handler's emitter completion contract.
 
 ---
 
@@ -114,7 +120,12 @@ State carries **only persistent UI signals**. One-shot effects go to a separate 
 - `Exception? exception` — never. A transient error is not state.
 - `lastErrorMessage` — never. Same reason.
 - Navigation triggers, focus requests, dialog flags — these are actions, not state.
-- Inter-event scratch variables on the BLoC itself — they belong in `State` for hot-restart safety.
+- Inter-event values that affect observable behavior belong in `State` so
+  transitions remain explicit and testable. Private fields are allowed only
+  for owned runtime handles and bookkeeping that are not presentation state.
+- A final reference to an externally owned platform handle is an opaque
+  capability reference, not a claim that the platform object is deeply
+  immutable. UI-visible handle replacement still requires a new State snapshot.
 
 ### Status enum standard
 
@@ -122,10 +133,13 @@ State carries **only persistent UI signals**. One-shot effects go to a separate 
 enum XxxStatus { idle, processing }
 ```
 
-- Use `idle / processing / successful` — **never** `initial / loading / loaded`.
-- **No `error` value** in the status enum. Errors are one-shot actions; status returns to `idle`.
-- Wizard flows with meaningful intermediate steps (`scanning`, `signing`, `broadcasted`) may keep them — but still no `error` and no `initial / idle` redundancy.
-- After every error: `emit(state.copyWith(status: XxxStatus.idle))` so the UI never gets stuck.
+- Choose names that describe the actual UI contract and avoid synonymous phases
+  such as both `initial` and `idle` without a behavioral difference.
+- A persistent terminal or retryable failure may be represented by a typed
+  failure field and, when useful, an `error` status. One-shot feedback remains
+  an Action.
+- `status` and `failure` must describe one coherent snapshot. Do not reset to
+  `idle` when the UI still renders a persistent failure.
 
 ### Side-effect channels
 
@@ -136,22 +150,42 @@ Two distinct channels for effects outside `State`. The one-line distinction:
 
 | Channel | API | Direction | Coupling | Use when |
 |---|---|---|---|---|
-| **Action stream** | `emitAction(XxxAction(...))` + `ActionBlocListener` | BLoC → UI of the **same** feature | UI subtree listens directly | SnackBar, navigation, focus, clipboard, dialog |
-| **Event bus** | `_eventBus.emit(XxxEvent(...))` in BLoC; `_eventBus.on<XxxEvent>().listen(...)` in another BLoC's constructor (unsubscribe in `close()`) | BLoC → **another BLoC**, cross-feature | Emitter does not know who subscribes; subscribers do not know who emits | Broadcast → refresh; cross-feature notifications |
+| **Action stream** | `emitAction(XxxAction(...))` + `EphemeralBlocListener` | BLoC → UI of the **same** feature | UI subtree listens directly | SnackBar, navigation, focus, clipboard, dialog |
+| **Event bus** | `_eventBus.emit(XxxAppEvent(...))`; subscribers use `_eventBus.on<XxxAppEvent>()` and cancel in `close()` | Cross-feature presentation coordination | Emitter and subscribers depend only on the event contract | Broadcast → refresh; cross-feature notifications |
 
 Why both exist:
 - **Action stream** keeps presentation effects *out of state* so widget rebuild does not retrigger SnackBars / navigation. Action is consumed once, then gone.
-- **EventBus** keeps BLoCs *out of each other's import graph*. Even `BlocListener<OtherBloc, OtherState>` is forbidden across features — it couples presentation to a concrete BLoC and inverts the dependency direction. EventBus emits typed `sealed class AppEvent`, subscribers attach independently.
+- **EventBus** keeps BLoCs *out of each other's import graph*. Even `BlocListener<OtherBloc, OtherState>` is forbidden across features — it couples presentation to a concrete BLoC and inverts the dependency direction. EventBus carries typed `AppEvent` subtypes; subscribers attach independently.
 
 Rules:
 - Never route UI effects (SnackBar, navigation) through the event bus — couples presentation to the bus and inverts dependency direction (presentation → domain becomes domain → presentation).
 - Never route cross-feature notifications through `emitAction` — actions are scoped to one BLoC's widget subtree; another feature will never see them.
 - Never use `BlocListener<OtherFeatureBloc, …>` across features — use EventBus.
+- Never use the event bus for state. If consumers need "how is it now?", use a shared state source instead.
+- Never make one BLoC subscribe to another BLoC. Subscribe to a repository/gateway/service/store stream or to `AppEventBus`.
 - Broad `catch (e, stack)` in a BLoC handler **must** `emitAction(XxxUnexpectedFailedAction())` **before** `addError(e, stack)` — the user must see feedback even if the BLoC closes afterward.
+
+For the full state-stream vs event-bus decision matrix, see [bloc-communication.md](./bloc-communication.md).
 
 ### Action naming
 
 All concrete action classes end with `Action`, symmetric with `Bloc / Event / State`. Example: `FeatureErrorOccurredAction`, `FeatureSendFailedAction`.
+
+All concrete BLoC input classes end with `Event`; all state classes end with
+`State`. Each BLoC uses the classic aggregate files `*_bloc.dart`,
+`*_event.dart`, `*_state.dart`, and optional `*_action.dart`. All concrete
+types of the same category live in that category file; `events/` and
+`actions/` subdirectories are forbidden. Internal callback events remain
+private to the BLoC library.
+
+### Application events versus domain events
+
+- `AppEvent` is an in-process, cross-feature notification carried by
+  `AppEventBus`.
+- Domain events belong inside their bounded-context package and end with
+  `DomainEvent`.
+- Presentation or runtime lifecycle notifications must not be named domain
+  events.
 
 ---
 
