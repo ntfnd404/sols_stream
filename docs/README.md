@@ -7,6 +7,8 @@ Project documentation following the AIDD v3 workflow.
 - `docs/project/` — persistent project truth (conventions, style guide, guidelines, workflow, templates, ADRs)
 - `docs/project/roadmap.md` — completed, in-flight, planned, and deferred work
 - `docs/project/testing-strategy.md` — test-level ownership and execution policy
+- `docs/project/context-map.md` — bounded contexts, capabilities, and their relationships
+- `docs/project/ubiquitous-language.md` — canonical product and protocol vocabulary
 - `docs/evidence/<TICKET>/` — reviewed decisions and reproducible acceptance
   evidence
 - `docs/<TICKET>/` — branch-local ticket workspace and scratch material
