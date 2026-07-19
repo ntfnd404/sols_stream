@@ -198,20 +198,23 @@ List<String> _exportUris(File file) => _parse(
 List<int> _methodInvocations(File file, String methodName) {
   final visitor = _MethodInvocationVisitor(methodName);
   _parse(file).accept(visitor);
+
   return visitor.offsets;
 }
 
 List<String> _namedTypes(File file) {
   final visitor = _NamedTypeVisitor();
   _parse(file).accept(visitor);
+
   return visitor.types;
 }
 
+// ignore: prefer-match-file-name
 final class _MethodInvocationVisitor extends RecursiveAstVisitor<void> {
-  _MethodInvocationVisitor(this.methodName);
-
   final String methodName;
   final List<int> offsets = [];
+
+  _MethodInvocationVisitor(this.methodName);
 
   @override
   void visitMethodInvocation(MethodInvocation node) {

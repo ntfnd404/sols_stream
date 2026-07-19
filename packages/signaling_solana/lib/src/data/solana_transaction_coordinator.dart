@@ -11,11 +11,6 @@ import 'package:solana_wallet/solana_wallet.dart';
 /// the queued operation so every funded transaction observes the balance after
 /// the preceding broadcast has completed.
 final class SolanaTransactionCoordinator {
-  final SolanaSigner _delegate;
-  final SolanaFundingService _funding;
-  final SignalingDiagnostics _diagnostics;
-  Future<void> _tail = Future<void>.value();
-
   late final SolanaSigner fundedSigner = _CoordinatedSolanaSigner(
     this,
     requiresFunding: true,
@@ -24,6 +19,13 @@ final class SolanaTransactionCoordinator {
     this,
     requiresFunding: false,
   );
+
+  final SolanaSigner _delegate;
+  final SolanaFundingService _funding;
+  final SignalingDiagnostics _diagnostics;
+  Future<void> _tail = Future<void>.value();
+
+  Ed25519HDPublicKey get publicKey => _delegate.publicKey;
 
   factory SolanaTransactionCoordinator({
     required SolanaSigner signer,
@@ -36,8 +38,6 @@ final class SolanaTransactionCoordinator {
     this._funding,
     this._diagnostics,
   );
-
-  Ed25519HDPublicKey get publicKey => _delegate.publicKey;
 
   Future<String> _signAndSend(
     List<Instruction> instructions, {
@@ -100,13 +100,13 @@ final class _CoordinatedSolanaSigner implements SolanaSigner {
   final SolanaTransactionCoordinator _coordinator;
   final bool _requiresFunding;
 
+  @override
+  Ed25519HDPublicKey get publicKey => _coordinator.publicKey;
+
   const _CoordinatedSolanaSigner(
     this._coordinator, {
     required this._requiresFunding,
   });
-
-  @override
-  Ed25519HDPublicKey get publicKey => _coordinator.publicKey;
 
   @override
   Future<String> signAndSend(List<Instruction> instructions) => _coordinator._signAndSend(

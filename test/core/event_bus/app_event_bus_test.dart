@@ -109,8 +109,9 @@ void main() {
   });
 }
 
+// ignore: prefer-match-file-name
 final class _TestAppEvent extends AppEvent {
-  const _TestAppEvent(this.sequence);
-
   final int sequence;
+
+  const _TestAppEvent(this.sequence);
 }

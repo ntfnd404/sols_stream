@@ -21,8 +21,6 @@ typedef WalletHttpClientFactory = http.Client Function();
 /// store and exposes only the published ports — never the concrete adapter,
 /// the keypair, or the [RpcClient].
 final class SolanaWalletAssembly {
-  static const int _maxExactWebInteger = 0x1fffffffffffff;
-
   /// Signing port (sign only).
   final SolanaSigner signer;
 
@@ -31,6 +29,8 @@ final class SolanaWalletAssembly {
 
   /// Workspace-internal funding precondition capability.
   final SolanaFundingService fundingService;
+
+  static const int _maxExactWebInteger = 0x1fffffffffffff;
 
   final http.Client? _ownedHttpClient;
   Future<void>? _disposeFuture;

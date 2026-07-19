@@ -1,19 +1,5 @@
 import 'package:solana/solana.dart' show JsonRpcException, TransactionError;
 
-final class SolanaRpcFailureDetails {
-  final int? failedInstructionIndex;
-  final int? customProgramErrorCode;
-  final TransactionError? transactionError;
-  final List<String> logs;
-
-  SolanaRpcFailureDetails({
-    this.failedInstructionIndex,
-    this.customProgramErrorCode,
-    this.transactionError,
-    List<String> logs = const [],
-  }) : logs = List.unmodifiable(logs);
-}
-
 final class SolanaRpcFailureDecoder {
   const SolanaRpcFailureDecoder();
 
@@ -78,4 +64,18 @@ final class SolanaRpcFailureDecoder {
   List<String> _logs(Object? value) => value is List ? List.unmodifiable(value.whereType<String>()) : const [];
 
   String _pascalCase(String value) => '${value[0].toUpperCase()}${value.substring(1)}';
+}
+
+final class SolanaRpcFailureDetails {
+  final int? failedInstructionIndex;
+  final int? customProgramErrorCode;
+  final TransactionError? transactionError;
+  final List<String> logs;
+
+  SolanaRpcFailureDetails({
+    this.failedInstructionIndex,
+    this.customProgramErrorCode,
+    this.transactionError,
+    List<String> logs = const [],
+  }) : logs = List.unmodifiable(logs);
 }

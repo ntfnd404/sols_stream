@@ -111,18 +111,6 @@ final class SolanaWallet implements SolanaSigner, SolanaWalletReader, SolanaFund
     return signature;
   }
 
-  Future<LatestBlockhash> _latestBlockhash() async {
-    try {
-      final result = await _rpc.getLatestBlockhash(
-        commitment: SolanaTransactionConfirmer.commitment,
-      );
-
-      return result.value;
-    } on Exception {
-      throw SolanaTransactionException.transport();
-    }
-  }
-
   @override
   Future<String> signForProof(List<Instruction> instructions) async {
     final blockhash = await _rpc.getLatestBlockhash(
@@ -134,5 +122,17 @@ final class SolanaWallet implements SolanaSigner, SolanaWalletReader, SolanaFund
     );
 
     return signed.encode();
+  }
+
+  Future<LatestBlockhash> _latestBlockhash() async {
+    try {
+      final result = await _rpc.getLatestBlockhash(
+        commitment: SolanaTransactionConfirmer.commitment,
+      );
+
+      return result.value;
+    } on Exception {
+      throw SolanaTransactionException.transport();
+    }
   }
 }

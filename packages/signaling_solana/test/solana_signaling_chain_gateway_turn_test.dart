@@ -95,7 +95,6 @@ final class _FakeRpcClient implements RpcClient {
 }
 
 // Test-local guard used to prove cleanup bypasses funding.
-// ignore: prefer-match-file-name
 final class _FailIfCalledFundingService implements SolanaFundingService {
   int calls = 0;
 

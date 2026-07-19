@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sols_stream/core/security/safe_error_formatter.dart';
 
+// ignore: prefer-match-file-name
 final class _SensitiveFailure implements Exception {
   @override
   String toString() => 'https://rpc.example/?token=secret response-body';

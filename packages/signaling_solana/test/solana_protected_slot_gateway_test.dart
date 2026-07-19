@@ -102,7 +102,6 @@ final class _DiscoveryRpcClient implements RpcClient {
 }
 
 // Test-local counter for transaction-boundary funding checks.
-// ignore: prefer-match-file-name
 final class _RecordingFundingService implements SolanaFundingService {
   final bool result;
   int calls = 0;

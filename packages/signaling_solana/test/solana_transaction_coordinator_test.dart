@@ -9,6 +9,7 @@ import 'package:test/test.dart';
 
 import 'fakes/recording_signer.dart';
 
+// ignore: prefer-match-file-name
 final class _RecordingFundingService implements SolanaFundingService {
   final bool result;
   final Object? failure;

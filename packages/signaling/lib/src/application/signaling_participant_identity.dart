@@ -9,6 +9,8 @@ final class SignalingParticipantIdentity {
   final String address;
   final Uint8List _publicKeyBytes;
 
+  Uint8List get publicKeyBytes => Uint8List.fromList(_publicKeyBytes);
+
   SignalingParticipantIdentity.fromPublicKey({
     required List<int> publicKeyBytes,
     required String Function(List<int> publicKeyBytes) addressEncoder,
@@ -25,6 +27,4 @@ final class SignalingParticipantIdentity {
       );
     }
   }
-
-  Uint8List get publicKeyBytes => Uint8List.fromList(_publicKeyBytes);
 }

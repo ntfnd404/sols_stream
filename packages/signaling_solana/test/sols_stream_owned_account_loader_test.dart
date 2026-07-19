@@ -5,6 +5,7 @@ import 'package:solana/dto.dart';
 import 'package:solana/solana.dart';
 import 'package:test/test.dart';
 
+// ignore: prefer-match-file-name
 final class _UnusedRpcClient implements RpcClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

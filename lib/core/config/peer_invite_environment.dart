@@ -7,10 +7,10 @@ import 'package:sols_stream/core/security/redactor.dart';
 final class PeerInviteEnvironment {
   final PeerInviteBase base;
 
-  Uri get url => base.uri;
-
   static const String _urlKey = 'PEER_INVITE_BASE_URL';
   static const String _urlRaw = String.fromEnvironment(_urlKey);
+
+  Uri get url => base.uri;
 
   factory PeerInviteEnvironment({required Uri url}) {
     try {
