@@ -50,6 +50,9 @@ for package in signaling signaling_solana solana_wallet; do
 done
 
 echo "=== Application Checks ==="
+if [[ -f tool/quality/validate_dart_defines.dart ]]; then
+  make check-app-config
+fi
 flutter analyze --fatal-infos --fatal-warnings
 flutter test test/architecture
 flutter test

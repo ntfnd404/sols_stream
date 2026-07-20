@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 import 'package:solana_wallet/solana_wallet_assembly.dart';
 import 'package:sols_stream/core/config/configuration_error.dart';
+import 'package:sols_stream/core/config/public_client_endpoint_policy.dart';
 
 /// Validated wallet identity and funding configuration.
 @immutable
@@ -45,7 +46,6 @@ final class WalletEnvironment {
   );
 
   /// Parses and validates wallet configuration values.
-  @visibleForTesting
   static WalletEnvironment fromValues({
     required String storageKey,
     required String minimumBalanceLamports,
@@ -69,8 +69,16 @@ final class WalletEnvironment {
     final parsedAirdropLamports = normalizedAirdropLamports == null || normalizedAirdropLamports.isEmpty
         ? null
         : _integer(_airdropLamportsKey, normalizedAirdropLamports);
-    final airdropRpcUri = _optionalUri(_airdropRpcKey, airdropRpcUrl);
-    final faucetUri = _optionalUri(_faucetKey, faucetUrl);
+    final airdropRpcUri = _optionalUri(
+      _airdropRpcKey,
+      airdropRpcUrl,
+      PublicClientEndpointKind.rpc,
+    );
+    final faucetUri = _optionalUri(
+      _faucetKey,
+      faucetUrl,
+      PublicClientEndpointKind.faucet,
+    );
 
     final WalletFundingConfig funding;
     switch (fundingMode.trim()) {
@@ -124,17 +132,19 @@ final class WalletEnvironment {
     );
   }
 
-  static Uri? _optionalUri(String key, String? raw) {
+  static Uri? _optionalUri(
+    String key,
+    String? raw,
+    PublicClientEndpointKind kind,
+  ) {
     final value = raw?.trim();
     if (value == null || value.isEmpty) return null;
-    final uri = Uri.tryParse(value);
-    if (uri == null) {
-      throw ConfigurationError(
-        '$key must be a valid URI.',
-      );
-    }
 
-    return uri;
+    return PublicClientEndpointPolicy.parse(
+      key: key,
+      value: value,
+      kind: kind,
+    );
   }
 
   static int _integer(String key, String raw) {

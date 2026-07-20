@@ -1,6 +1,6 @@
 import 'package:meta/meta.dart';
 import 'package:sols_stream/core/config/configuration_error.dart';
-import 'package:sols_stream/core/security/redactor.dart';
+import 'package:sols_stream/core/config/public_client_endpoint_policy.dart';
 
 @immutable
 final class RpcEnvironment {
@@ -19,7 +19,13 @@ final class RpcEnvironment {
   static RpcEnvironment fromDartDefines() {
     final url = _requiredUrl(_urlKey, _urlRaw);
 
-    return RpcEnvironment(url: _validatedUrl(_urlKey, url));
+    return RpcEnvironment(
+      url: PublicClientEndpointPolicy.parse(
+        key: _urlKey,
+        value: url,
+        kind: PublicClientEndpointKind.rpc,
+      ),
+    );
   }
 
   static String _requiredUrl(String key, String raw) {
@@ -39,18 +45,5 @@ final class RpcEnvironment {
     if (t == null || t.isEmpty) return null;
 
     return t;
-  }
-
-  static Uri _validatedUrl(String key, String value) {
-    final uri = Uri.tryParse(value);
-    if (uri == null || !uri.hasScheme || !uri.hasAuthority || (uri.scheme != 'http' && uri.scheme != 'https')) {
-      throw ConfigurationError(
-        'Invalid $key: "${Redactor.redactUrl(value)}". '
-        'Expected an absolute http or https URL. '
-        'Run Flutter with --dart-define-from-file=config/<env>.env.',
-      );
-    }
-
-    return uri;
   }
 }

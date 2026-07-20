@@ -56,19 +56,57 @@ void main() {
     );
   });
 
-  test('leaves numeric and endpoint invariants to the wallet assembly', () {
+  test('leaves numeric invariants to the wallet assembly', () {
     final environment = WalletEnvironment.fromValues(
       storageKey: 'wallet',
       minimumBalanceLamports: '0',
       airdropLamports: '-1',
       fundingMode: 'rpc_airdrop',
-      airdropRpcUrl: 'relative-rpc-path',
+      airdropRpcUrl: 'https://api.devnet.solana.com',
     );
     final funding = environment.funding as RpcAirdropFundingConfig;
 
     expect(funding.minimumBalanceLamports, 0);
     expect(funding.airdropLamports, -1);
-    expect(funding.airdropRpcUri, Uri.parse('relative-rpc-path'));
+    expect(
+      funding.airdropRpcUri,
+      Uri.parse('https://api.devnet.solana.com'),
+    );
+  });
+
+  test('rejects credential-bearing client funding endpoints', () {
+    for (final endpoint in [
+      'relative-rpc-path',
+      'https://user@example.com',
+      'https://api.devnet.solana.com/path',
+      'https://api.devnet.solana.com?token=secret',
+      'https://api.devnet.solana.com#fragment',
+    ]) {
+      expect(
+        () => WalletEnvironment.fromValues(
+          storageKey: 'wallet',
+          minimumBalanceLamports: '1',
+          airdropLamports: '2',
+          fundingMode: 'rpc_airdrop',
+          airdropRpcUrl: endpoint,
+        ),
+        throwsA(isA<ConfigurationError>()),
+      );
+    }
+  });
+
+  test('allows a public faucet path without credentials', () {
+    final environment = WalletEnvironment.fromValues(
+      storageKey: 'wallet',
+      minimumBalanceLamports: '1',
+      airdropLamports: '2',
+      fundingMode: 'rpc_airdrop_with_faucet',
+      airdropRpcUrl: 'https://api.devnet.solana.com',
+      faucetUrl: 'https://faucet.example.com/fund',
+    );
+
+    final funding = environment.funding as RpcAirdropWithFaucetFundingConfig;
+    expect(funding.faucetUri.path, '/fund');
   });
 
   test('rejects invalid combinations and identity keys', () {

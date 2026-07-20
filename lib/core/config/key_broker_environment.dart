@@ -19,7 +19,6 @@ final class KeyBrokerEnvironment {
     url: _urlRaw,
   );
 
-  @visibleForTesting
   static KeyBrokerEnvironment fromValues({
     required String mode,
     String? url,
