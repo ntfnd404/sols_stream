@@ -1,6 +1,6 @@
 # Testing Strategy
 
-Last reviewed: 2026-07-19
+Last reviewed: 2026-07-20
 
 ## Test Levels
 
@@ -44,6 +44,16 @@ Release gates are evaluated per platform. Custody, provider-error safety,
 bootstrap recovery, and core signaling evidence are common gates. Browser
 payload limits, cross-client crypto vectors, and Chrome stress evidence are
 additional Web release gates and do not block a non-Web platform by themselves.
+
+SS-0017 Darwin evidence requires a physical iOS device and the distributable
+macOS artifact. For each applicable platform it covers camera and microphone
+allow/deny behavior, local media acquisition, offer/answer exchange, a connected
+peer with two-way audio/video, disconnect cleanup, and reconnection. A simulator,
+unsigned compatibility build, or successful unit suite cannot replace this
+evidence.
+
+Signed Apple distribution is separately blocked by SS-0026. SwiftPM/CocoaPods
+compatibility on the pinned toolchain is not signing or device evidence.
 
 The roadmap records gate status only. Reproducible commands, fixture identity,
 source snapshot, results, and skipped scenarios live in the owning versioned

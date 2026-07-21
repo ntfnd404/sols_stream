@@ -51,6 +51,25 @@ Workflow Version: 3
 - Reference JS code is not production source. Its debug logging is an anti-pattern
   inventory for the Dart rewrite, not behavior to port.
 
+## Compile-Time Client Configuration
+
+Flutter dart-defines are public application inputs, not a secret store. Base64
+encoding performed by Flutter or CocoaPods provides no confidentiality.
+
+- Only keys in the tracked application allowlist may be passed through the
+  project Make targets.
+- RPC and airdrop RPC endpoints are public HTTP(S) origins without credentials,
+  query, fragment, or private path tokens.
+- Faucet paths may be public, but user info, query credentials, and fragments
+  remain forbidden.
+- Provider secrets, signing credentials, private keys, tokens, and passwords
+  belong in backend or CI secret storage and may never enter dart-defines.
+- Validator failures report only a safe key name and rule. They never include
+  the rejected value, endpoint, or file contents.
+- CocoaPods parser warnings are compatibility diagnostics, not proof that an
+  encoded value is protected. They must not be suppressed without identifying
+  the underlying build issue.
+
 ## Provider Failure Boundary
 
 `SS-0013` establishes two layers of protection. Solana read adapters publish

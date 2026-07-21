@@ -1,6 +1,6 @@
 # Project Roadmap
 
-Last reviewed: 2026-07-19
+Last reviewed: 2026-07-20
 
 ## Completed tickets
 
@@ -10,6 +10,9 @@ Last reviewed: 2026-07-19
   (`main@e692e35`).
 - SS-0013 — closed the provider-error boundary and typed safe diagnostics.
   Evidence: [SS-0013 evidence](../evidence/SS-0013/evidence.md).
+- SS-0025 — enforced the public Flutter dart-define boundary and sanitized
+  configuration preflight. Evidence:
+  [SS-0025 evidence](../evidence/SS-0025/evidence.md).
 
 ## In-flight tickets
 
@@ -62,6 +65,16 @@ delivered through:
   Do not change `v:3/z:1` or add a custom RFC 1950 parser without the protocol
   decision.
 
+## Apple-specific blocking release gates
+
+- SS-0026 — establish the production Apple identity and signed distribution
+  workflow. iOS and macOS releases remain prohibited while bundle identifiers,
+  Apple Team ownership, iOS distribution, Developer ID Application signing,
+  Hardened Runtime, minimum camera/audio-input entitlements, secure timestamp,
+  notarization, stapling, Gatekeeper verification, and clean-machine artifact
+  installation are unproven. Signing credentials stay outside Git and
+  dart-defines. The first macOS channel is direct Developer ID distribution.
+
 A platform release is prohibited while a common gate, one of that platform's
 specific gates, or its required smoke evidence is open. A gate closes only
 through owned SS implementation tickets with reviewed acceptance matrices and
@@ -72,8 +85,8 @@ snapshot, and results remain in the owning ticket evidence directory.
 | Platform | Common gates | Platform-specific gates | Required app evidence |
 |---|---|---|---|
 | Android | BL-001, SS-0004, BL-002, SS-0024 | None currently registered | SS-0017 Android smoke |
-| iOS | BL-001, SS-0004, BL-002, SS-0024 | None currently registered | SS-0017 iOS smoke |
-| macOS | BL-001, SS-0004, BL-002, SS-0024 | None currently registered | SS-0017 macOS smoke |
+| iOS | BL-001, SS-0004, BL-002, SS-0024 | SS-0026 | SS-0017 iOS device smoke |
+| macOS | BL-001, SS-0004, BL-002, SS-0024 | SS-0026 | SS-0017 signed macOS artifact smoke |
 | Linux | BL-001, SS-0004, BL-002, SS-0024 | None currently registered | SS-0017 Linux smoke |
 | Windows | BL-001, SS-0004, BL-002, SS-0024 | None currently registered | SS-0017 Windows smoke |
 | Web | BL-001, SS-0004, BL-002, SS-0024 | SS-0018, SS-0019, SS-0020, SS-0021 | SS-0017 Web/Chrome smoke |
@@ -88,6 +101,14 @@ snapshot, and results remain in the owning ticket evidence directory.
   BL-002 before implementing recovery UI.
 - SS-0023 — define allowlisted normalized DTOs and retention policy before
   integrating Sentry, Crashlytics, or another remote reporter.
+- SS-0027 — gate Flutter or `flutter_webrtc` upgrades on Darwin dependency
+  compatibility. The current Flutter 3.44.6 project has SwiftPM integration,
+  while `flutter_webrtc` 1.5.2 still uses Flutter's CocoaPods fallback. Before
+  an upgrade, run clean iOS/macOS release builds and preserve complete
+  CocoaPods/SwiftPM diagnostics. If upstream SwiftPM support remains absent,
+  use a separate ADR to choose a maintained fork, replacement, or temporarily
+  pinned CocoaPods toolchain. Do not create an app-level `Package.swift` as an
+  unowned plugin workaround.
 
 ## Deferred / open items
 
@@ -108,6 +129,8 @@ snapshot, and results remain in the owning ticket evidence directory.
 
 ## Change log
 
+- 2026-07-20 — closed SS-0025 and registered Apple signing and Darwin
+  dependency-manager gates SS-0026/SS-0027.
 - 2026-07-19 — closed SS-0013 against its verified source tree and made wallet
   address logging forbidden in every environment.
 - 2026-07-18 — implemented SS-0013 provider-error sanitization, separated
