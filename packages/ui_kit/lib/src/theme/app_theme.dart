@@ -33,7 +33,7 @@ import 'package:ui_kit/src/theme/typography_theme.dart';
 final class AppTheme {
   /// [TransitionBuilder] for [MaterialApp.builder]. Static method reference —
   /// not a getter-closure — so [MaterialApp] sees a stable [Function].
-  static TransitionBuilder get builder => _buildScope;
+  static TransitionBuilder get builder => _scopeBuilder;
 
   const AppTheme._();
 
@@ -101,7 +101,7 @@ final class AppTheme {
     );
   }
 
-  static Widget _buildScope(BuildContext context, Widget? child) {
+  static Widget _scopeBuilder(BuildContext context, Widget? child) {
     if (child == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final colorExt = theme.extension<ColorThemeData>();

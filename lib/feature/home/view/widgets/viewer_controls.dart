@@ -15,18 +15,6 @@ class ViewerControls extends StatelessWidget {
   final bool connected;
   final VoidCallback onConnect;
 
-  Widget _buildIcon() {
-    if (connecting) {
-      return const SizedBox.square(
-        dimension: 16,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      );
-    }
-    if (connected) return const Icon(Icons.check_circle_outline);
-
-    return const Icon(Icons.call);
-  }
-
   String _label() {
     if (connecting) return 'Connecting…';
     if (connected) return 'Connected';
@@ -52,9 +40,35 @@ class ViewerControls extends StatelessWidget {
       const SizedBox(height: 12),
       FilledButton.icon(
         onPressed: (connecting || connected) ? null : onConnect,
-        icon: _buildIcon(),
+        icon: _ViewerConnectIcon(
+          connecting: connecting,
+          connected: connected,
+        ),
         label: Text(_label()),
       ),
     ],
   );
+}
+
+final class _ViewerConnectIcon extends StatelessWidget {
+  const _ViewerConnectIcon({
+    required this.connecting,
+    required this.connected,
+  });
+
+  final bool connecting;
+  final bool connected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (connecting) {
+      return const SizedBox.square(
+        dimension: 16,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    if (connected) return const Icon(Icons.check_circle_outline);
+
+    return const Icon(Icons.call);
+  }
 }

@@ -8,33 +8,52 @@ These rules are appended to `docs/project/conventions.md` when the Flutter-Dart 
 
 ---
 
-## Architecture: Clean Architecture + Hexagonal
+## Architecture: Layered Modules + Ports/Adapters
 
-```
-lib/                    → Presentation (Flutter UI + BLoC)
-packages/domain/        → Domain (entities + interfaces, ZERO deps)
-packages/data/          → Data (repository + service implementations)
-packages/<infra>/       → Infrastructure (wraps one external system each)
-packages/ui_kit/        → UI: Design system (tokens, typography, theme)
-```
-
-### Dependency Graph
-
-```
-data      → domain, <infra packages>
-ui_kit    → Flutter SDK (only)
-<infra>   → external library (only)
-domain    → (nothing)
-```
+The project uses package ownership and consumer-owned ports without claiming a
+repository-wide textbook Clean Architecture layout. The canonical topology and
+dependency graph live only in [architecture.md](./architecture.md); do not copy
+them into overlays or conventions.
 
 ### Package Type Rules
 
 | Type | Rule |
 |------|------|
-| **core** (`domain`) | Entities + interfaces. Pure Dart. Zero dependencies. |
-| **core** (`data`) | Implements domain. Orchestrates infra adapters. |
-| **infra** | Wraps one external system. No domain knowledge. |
-| **ui** (`ui_kit`) | Design system only. No domain knowledge. |
+| **bounded context** | Owns its language, policies, application ports, and internal adapters. |
+| **adapter** | Implements a consumer-owned port and translates an external system. |
+| **runtime capability** | Owns one platform runtime lifecycle such as WebRTC or playback. |
+| **infrastructure** | Isolates a platform or provider boundary such as secure storage. |
+| **UI** (`ui_kit`) | Design system only. No business logic. |
+
+---
+
+### DDD Package Boundaries
+
+- A bounded context owns its language. Do not share mutable "core domain" models across contexts.
+- Ports belong to the consumer context. Adapter packages implement those ports; they do not define the contract for the consumer.
+- DDD/application packages must not import `package:flutter/*`.
+- Platform/runtime packages may depend on Flutter plugins only inside their runtime adapter surface.
+- App `lib/feature/*` is presentation-only: BLoC, UI state, widgets, and feature DI.
+- Secret-bearing value objects and DTOs must provide redacted diagnostics; never rely on default `toString`.
+- Raw external exceptions must not cross adapter boundaries or reach UI/logs.
+  Convert them to sanitized typed failures; textual redaction alone is not a
+  security boundary for arbitrary provider bodies.
+
+### Developer Tool Ownership
+
+- Prefer Flutter/Dart CLI capabilities for root development workflows; do not
+  maintain a custom server or wrapper when the SDK already owns the behavior.
+- Root app tooling, when genuinely necessary, lives in root `tool/`;
+  package-specific tooling lives in the owning package's `tool/`.
+- Tool entrypoints live directly under `tool/`. Capability-specific tool code
+  uses a named folder such as `tool/idl/`. Reserve `tool/support/` for code
+  genuinely shared by multiple commands; do not use `tool/src/`, which has no
+  package-privacy meaning.
+- Tool process settings use `config/tooling/*`, never Flutter dart-define files.
+- Wire offsets, protocol ranges, and process exit codes must use named constants
+  with comments explaining the external standard or binary layout.
+- Versioned Solana IDL belongs to `signaling_solana`; `signaling` remains
+  independent of Solana wire artifacts.
 
 ---
 
@@ -195,7 +214,7 @@ Each layer handles only the errors that belong to its contract.
 
 | Layer | Responsibility | Catch pattern |
 |---|---|---|
-| **Gateway / DataSource** | Translate external failures (RPC, network, parse) into bounded-context exceptions | `catch (_, stack)` + `Error.throwWithStackTrace(DomainException(), stack)` |
+| **Gateway / DataSource** | Translate external `Exception` failures into consumer-owned exceptions while allowing programming `Error` values to propagate | `on Exception catch (_, stack)` + `Error.throwWithStackTrace(DomainException(), stack)` |
 | **Use Case** | Catch only exceptions that are part of the use-case scenario (cross-BC translation, algorithm fallbacks, security sanitization) | **Selective** `on X catch` + `on Y { rethrow }` — no broad `catch (e, stack)` unless justified |
 | **BLoC / Controller** | Catch bounded-context domain exceptions for UI feedback | `on XxxException catch (e) → emitAction`; unexpected → `addError` |
 | **Domain Service** | Mostly no `try/catch`; only expected algorithm branches (e.g. `InsufficientFundsException` inside a coin-selection loop) | — |
@@ -224,29 +243,20 @@ try {
 
 If there is no language translation and no recovery — drop the `try/catch` entirely. Pure delegation is fine.
 
-### Broad `catch` exception: security-first use cases
+### Typed exception at a layer boundary
 
-A use case may use broad `catch (_, stack)` **only** if all four criteria hold:
-
-1. **Change abstraction** — translate internal vocabulary to domain language
-2. **Hide secrets** — caught exception messages may carry sensitive material that must not leak
-3. **Add context** — preserve original stack trace via `Error.throwWithStackTrace`
-4. **Can recover** — caller can distinguish typed exceptions and act
-
-Sign use cases over key material qualify. Generic delegation use cases do not.
-
-### Typed exception at layer boundary — 4-criteria framework
-
-A typed wrapper exception on a layer boundary is justified if **any one** holds:
+A typed wrapper is justified when at least one material contract change holds:
 
 | Criterion | Question |
 |---|---|
 | (a) Change abstraction | Does the wrapper translate vocabulary across BCs? |
 | (b) Hide secrets | Could the underlying exception's message leak sensitive data? |
-| (c) Add context | Is the wrap adding diagnostic information? |
-| (d) Can recover | Can the caller distinguish typed wrappers and act differently? |
+| (c) Can recover | Can the caller distinguish typed wrappers and act differently? |
 
-Do **not** dismiss the wrap because consumers currently do generic `catch (_)`. Consumer habits ≠ layer contract. The contract is what the layer **promises**, not what callers happen to use today.
+Adding context alone does not justify another exception type. Preserve a stack
+when translating, but do not retain provider objects or messages. Do **not**
+dismiss a real boundary contract merely because current consumers use generic
+catching; consumer habits do not define the layer contract.
 
 ### `rethrow` vs `Error.throwWithStackTrace`
 
@@ -294,8 +304,18 @@ try {
 
 - Constructor-based DI (no GetIt or service locator)
 - `InheritedWidget` at feature scope
-- `Scope` pattern: `FeatureScope(create: BlocFactory)` + `AppScope(dependencies)`
-- Each feature has its own `di/` directory with Scope and BlocFactory
+- `Scope` pattern: `FeatureScope.createBloc(context)` + `AppScope(dependencies)`
+- `AppDependencies` is the only application-lifetime instance holder
+- `AppBootstrap` initializes process-global SDK state but stores no runtime instances
+- `AppScope` stores one dependency-container reference and owns its widget-tree lifecycle
+- Replacing the app dependency graph at runtime is forbidden; restart the composition root
+- Runtime SDK handles are created and closed by their owning module assemblies
+- `AppResourceDisposalStack` registers whole assemblies/resources, never their private internals
+- DI build failures are reported, cleaned up, and rethrown with the original stack trace
+- Scope factory naming: public static method `createBloc(...)`, private state field `_blocFactory`, inherited field `blocFactory`
+- Use `Factory<T>` / `ParamFactory<T, P>` from `lib/core/di/typedefs/factory.dart` for DI factories
+- Stateful features own a `di/` directory with their scope and BLoC factory;
+  view-only features do not add empty layers.
 
 ---
 
@@ -303,30 +323,52 @@ try {
 
 Feature = **BLoC + DI + View only** — no domain or data code inside a feature.
 Domain and data are shared exclusively via packages.
+Platform/runtime capability ownership also belongs in packages, not features:
+WebRTC peer connections, media streams, HLS playback controllers, cryptography,
+storage, RPC/chain adapters, and broker clients are package responsibilities.
+Feature BLoCs orchestrate those package APIs and expose presentation state only.
+
+Media controls must name their direction. Local publication controls affect
+outgoing senders only; participant playback controls affect incoming receivers
+only. Hiding a widget is not equivalent to stopping capture or detaching an RTP
+sender. Route session type and participant role are separate typed values and
+must not be encoded into one intent enum.
 
 ```
 lib/feature/<feature>/
-├── <flow>/         # Per-flow sub-folder (list/, setup/, detail/, ...)
-│   ├── bloc/       # BLoC + State + Event for this flow
-│   ├── di/         # Scope + BlocFactory for this flow
-│   └── view/       # Screens and widgets for this flow
-└── shared/         # Optional: widgets shared across flows of this feature
+├── bloc/           # BLoC + State + Event + optional Action
+├── di/             # Scope + BLoC factory when the feature owns state
+├── model/          # Optional presentation-only values
+└── view/           # Screens and widgets
 ```
 
-### Sub-Feature Folders (per flow)
+The root `app` feature may additionally own `routing/` and `lock/`. A view-only
+feature may contain only `view/`. Split a feature only after it contains
+multiple independent workflows with distinct state and lifecycle.
 
-A feature is a Bounded Context UI representation. Each user flow inside it (list, create, detail, settings, ...) gets its own sub-folder with **its own BLoC + Scope + View**. This keeps BLoCs small and prevents god-objects.
+### Workflow Ownership
+
+A feature is an app presentation module, not a bounded context. Each independent
+presentation workflow gets its own BLoC and scope when it has distinct state
+and lifecycle.
 
 ### Cross-Feature Communication
 
-Features are independent Bounded Contexts. They **must not** import each other's `bloc/` or `domain/`. Allowed channels:
+Features are independent presentation modules. They **must not** import each
+other's `bloc/` internals. Allowed channels:
 
-- **AppEventBus** — typed events (`sealed class AppEvent`) for cross-feature notifications
+- **AppEventBus** — typed `AppEvent` subtypes for cross-feature notifications
+- **Shared state source** — repository/gateway/service/store stream when multiple consumers need the same current value
 - **Router** — composition point (`AppRouterDelegate.build()`)
-- **AppScope** — shared dependencies (repositories, use cases) wired once at app level
-- **Shared UI** — importing another feature's `shared/` widget is acceptable
+- **AppScope** — exposes the app-level dependency container and closes its owned lifecycle
 
-Direct BLoC-to-BLoC subscription across features is forbidden — it couples Bounded Contexts.
+Shared UI moves to `lib/common` when app-specific or `ui_kit` when reusable. A
+feature does not publish a `shared/` API for other features.
+
+Direct BLoC-to-BLoC subscription across features is forbidden because it
+couples presentation modules through concrete state machines.
+Do not create one BLoC from another BLoC's state when both can be created from the same route parameter or dependency.
+See [bloc-communication.md](./bloc-communication.md) for the full decision matrix.
 
 ---
 
@@ -413,19 +455,17 @@ When a set of related items has no instance state, pick the form by what is actu
    Example: `instruction_builder.dart` (`buildCreateRoom`, `buildOpenConnectSlot`, ...), `borsh_writer.dart` (`bString`, `bVec`).
 
 3. **A cohesive service**: operations share a private helper, or the class name documents a concept the method names don't (a parser, a codec, a crypto service) → `final class Xxx { const Xxx._(); static ... }` (private constructor, `final` to block subclassing).
-   Example: `SignalPayloadCrypto` (encrypt/decrypt share `_deriveKey`), `ConnectSlotAccountParser` (`parse` only makes sense named after what it parses).
+   Example: `PassphrasePayloadCrypto` (encrypt/decrypt share key derivation), `PeerInviteCodec` (`decode` only makes sense named after what it decodes).
 
 Do not add `abstract` to case 3 — the private constructor already makes the class non-instantiable; `abstract` adds nothing once a constructor exists. Do not wrap case 2 in a class merely to satisfy `avoid_classes_with_only_static_members` — the lint accepts an explicit private constructor (case 3) precisely for groupings that earn it.
 
-### In-house over small external deps
+### External dependency threshold
 
-For utility-class candidates under ~250 LOC (mixins, wrapper widgets, small helpers), prefer an **in-house implementation in `lib/core/`** over an external dependency, even when the dep is maintained and stable.
-
-Rationale: control over maintenance and naming, fewer transitive dependencies, freedom to improve point-by-point, no opacity for the reader. Workflow:
-
-1. Code-review the reference implementation (from pasted source or `~/.pub-cache/hosted/pub.dev/<pkg>-<ver>/`)
-2. List concrete improvements with justification
-3. Final version in `lib/core/<topic>/` with naming aligned to project conventions
+Use a maintained dependency for generic, well-established behavior when it
+reduces lifecycle or correctness risk. Keep code in-house only when behavior is
+project-specific, the implementation is genuinely smaller than the dependency
+surface, and the team accepts ownership of tests and maintenance. Do not copy a
+third-party implementation into `lib/core` merely to reduce dependency count.
 
 ---
 
@@ -460,27 +500,38 @@ Rationale: model guesses about library APIs are wrong often enough that one cita
 
 ```
 No `!` null assertion — extract to local variable, null-check
-No `dynamic` — use `Object` or `Object?`
+No `dynamic` in owned APIs, DTOs, or JSON parsing — use `Object` or `Object?`.
+An exact third-party SDK signature may require `dynamic`; confine it to that
+adapter, document the requirement, and convert immediately.
 No `print` — use `dart:developer` log or project logger
 No Cubit — BLoC only
 No GetIt or service locator — constructor DI + InheritedWidget
 No private `_buildXxx` methods — extract as separate widget classes
-No relative imports — always `package:` imports
+No relative imports in production `lib/` — use `package:` imports. Test-only
+helpers and package-local `test/tool` internals may use relative imports.
 No `BlocProvider.value` — always `BlocProvider(create: ...)`
 No passing BLoC as constructor parameter to a Widget — use `context.read<T>()`
 No `BlocProvider(create: (_) => widget.bloc)` — hands lifecycle to provider while BLoC was created externally
-No `^` in dependency versions — exact versions only
+No `^` in package dependency versions — use exact package versions. SDK
+environment constraints may use the supported caret range.
 No repository/service implementations inside a feature directory — use module `data/`
 No entities or interfaces inside a feature directory — use module `domain/`
 No imports from another feature's `bloc/` or `domain/` — cross-feature only via event bus or router
+No BLoC-to-BLoC subscriptions — use a shared state source or `AppEventBus`
+No event bus for state — use repository/gateway/service/store stream
+No repository without a real data source — use an owning package/app-shell service/store for ephemeral app state
 No imports of module `src/data/*` from features — use public API (barrel) only
-No deep-import `package:<module>/src/*` from `lib/` or `test/` — barrels only
+No deep-import `package:<module>/src/*` across package boundaries. Tests inside
+the owning package may import their own `src` to verify private adapters.
 No import of app code (`lib/`) from a workspace package
 No top-level `components/` directory — business code belongs in `packages/`
 No god-object BLoCs handling multiple flows — one BLoC per flow
-No `Exception?` field in BLoC state — errors are actions, not state
-No `error` value in status enum — same reason
-No broad `catch (e, stack)` in use cases without all four criteria (change abstraction / hide secrets / add context / can recover)
+No raw provider `Exception` object in BLoC state. A sanitized typed failure is
+allowed when the UI must persist and render it.
+No contradictory `status`/`failure` snapshot. An `error` status is allowed when
+it is part of the explicit UI contract.
+No broad `catch` in infrastructure or use cases that converts Dart `Error`
+values into expected failures.
 No `throw e` — use `rethrow` or `Error.throwWithStackTrace(newException, stack)`
 No inline test doubles — `fakes/` or `mocks/` subfolders only, never `helpers/`
 No mocktail on `final class` — only `abstract class` or `abstract interface class`
@@ -534,23 +585,21 @@ BLoC instances will be recreated on every navigation push.
 ## `lib/core/` Mandate
 
 `lib/core/` contains **only**:
-- `di/` — composition root (`AppDependencies`, `AppDependenciesBuilder`)
-- `routing/` — `AppRouter`, `AppRouterDelegate`
-- `event_bus/` — `AppEventBus` and domain event hierarchy
-- `adapters/` — composition adapters that bridge two packages that cannot depend on each other directly
-- `config/` — `AppEnvironment`, `EnvironmentLoader`, and related config types
-- `bootstrap/` — app initialisation
+- `bloc/` — app-wide BLoC observation
+- `bootstrap/` — process-global app initialisation
+- `config/` — validated app environment contracts
+- `di/` — composition root and application-lifetime ownership
+- `event_bus/` — `AppEventBus` and cross-feature application events
+- `security/` — app-shell redaction and safe diagnostics helpers
 
 **Not allowed in `lib/core/`:**
 - UI theme, tokens, fonts → `ui_kit`
 - Extensions without architectural role → `lib/common/`
 - Domain logic → `packages/*`
-- Feature state → `lib/feature/*`
+- Feature state and routing → `lib/feature/*`
 
-**Escalation rule for `lib/core/adapters/`:** An adapter is acceptable only when all hold:
-1. It bridges two package-level bounded contexts that cannot depend on each other directly (or where one direction creates a cycle).
-2. It carries real logic (DTO translation, use-case composition) — not a thin passthrough.
-3. It is the **only** such bridge between those two BCs.
+Cross-package adapters belong in an owning adapter package. Do not create
+`lib/core/adapters` as an escape hatch for dependency cycles.
 
 ---
 

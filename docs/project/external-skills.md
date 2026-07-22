@@ -2,11 +2,26 @@
 
 Which external skills apply to this adaptor and where they conflict with project conventions.
 
-See also: `docs/project/gate-skill-matrix.md`.
+See also: `docs/project/gate-skill-matrix.md` and
+`docs/project/superpowers-overlay.md`.
+
+## Execution Layers
+
+| Layer | Prefix / command | Role |
+|---|---|---|
+| AIDD workflow skills | `/aidd-*` | Own workflow lifecycle and gate progression |
+| Flutter/Dart stack skills | `dart-*`, `flutter-*` | Help execute stack-specific work inside an AIDD gate |
+| Superpowers plugin | `/brainstorming`, `/execute-plan`, TDD, debugging, code-reviewer, subagents | General execution methodology; never closes AIDD gates |
+
+The `dart-*` and `flutter-*` skills installed under `.claude/skills/` are part
+of the documented workflow support layer. They are selected by batch type and
+must follow project conventions.
 
 ## Active Set
 
-19 skills split into three applicability categories:
+19 catalog rows split into three applicability categories. The Flutter-Dart
+adaptor installs the 16 unique skills marked fully applicable or applicable
+with caveats; skills marked not applicable are documented but not installed.
 
 ### Fully applicable (core set)
 
@@ -31,6 +46,7 @@ See also: `docs/project/gate-skill-matrix.md`.
 | Skill | Override |
 |---|---|
 | `flutter-implement-json-serialization` | OK for non-sensitive DTOs; **forbidden** for signatures, keys, signed-tx — use custom code paths there |
+| architecture/security skills | May help inspect DDD boundaries, redaction, and package topology; they never replace project conventions or security-reviewer |
 | `flutter-setup-declarative-routing` | one-shot — not needed after initial setup |
 | `flutter-setup-localization` | one-shot — not needed after initial setup |
 | `dart-generate-test-mocks` | fakes/mocks go in separate files under `test/fakes/` or `test/mocks/`, never inline |
@@ -50,11 +66,16 @@ When a skill recommendation conflicts with project rules, the project wins:
 1. `docs/project/conventions.md`
 2. `docs/project/adr/*`
 3. `docs/project/code-style-guide.md`
-4. **Skill**
-5. Flutter/Dart defaults
+4. `docs/project/workflow.md`
+5. **Skill or plugin** (`dart-*`, `flutter-*`, Superpowers)
+6. Flutter/Dart defaults
 
 Example: `flutter-apply-architecture-best-practices` may recommend a Logic layer with providers/services.
 This project uses BLoC + sub-feature folders + scope-based DI. Conventions win.
+
+Superpowers follows the same rule. It may suggest TDD, systematic debugging,
+subagents, or `/execute-plan`, but it must not replace AIDD artifacts, reviewer,
+security-reviewer, QA, or batch approval.
 
 ## Memory Bindings
 

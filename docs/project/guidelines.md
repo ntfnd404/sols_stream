@@ -14,7 +14,14 @@ Prefer `StatelessWidget` over `StatefulWidget` wherever possible.
 Move state to a BLoC or a `StatefulWidget` ancestor; keep leaf widgets stateless and `const`.
 
 `AppScope` must sit **above** `App` in the widget tree so all features can access dependencies.
+It lives in `core/di`, stores only one `AppDependencies` reference, and owns
+that container's widget-tree lifecycle. It does not support replacing the
+dependency graph at runtime. `AppBootstrap` must not retain runtime instances.
 Feature scopes live inside `AppRouterDelegate.build()` — above `Navigator`, below `MaterialApp`.
+
+Module assemblies create and close their own SDK clients. The app composition
+root registers complete assemblies in `AppResourceDisposalStack`; it must not assemble
+their private gateways or track their internal disposers.
 
 Never read `InheritedWidget` inside `initState`. Use `didChangeDependencies` with `_initialized` guard.
 

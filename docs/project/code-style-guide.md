@@ -31,60 +31,49 @@ These rules are appended to `docs/project/code-style-guide.md` when the Flutter-
 
 ## Class Member Ordering
 
-Flutter framework convention (verified in `EdgeInsets`, `Container`, `TextButton` source):
+The project uses the enforceable DCM 1.38 default order:
 
-1. Constructors (production first, then named, factory, then `@visibleForTesting`)
-2. Static const / static final fields
-3. Instance fields — final, then late, then nullable (public before private within each)
-4. Getters / computed properties
-5. Public methods
-6. Dispose / close
-7. Private methods
+1. Public fields
+2. Private fields
+3. Public getters
+4. Private getters
+5. Public setters
+6. Private setters
+7. Constructors
+8. Public methods
+9. Private methods
 
-Constructors first, static fields second, instance fields last. This matches DCM `member-ordering`.
-
-```dart
-// ❌
-class Foo {
-  static const _timeout = 30; // static before constructor — wrong
-  const Foo();
-  final String _id;
-}
-
-// ✅
-class Foo {
-  const Foo();
-  static const _timeout = 30; // static after constructor
-  final String _id;            // instance fields last
-}
-```
+This order is the single source of truth for regular classes in the IDE and
+the AIDD gate.
 
 ### Widget Member Ordering
 
-1. `const` / `final` fields
-2. Constructors
-3. `var` / mutable fields
-4. `initState`
-5. `didChangeDependencies`
-6. `didUpdateWidget`
-7. `build`
-8. `dispose`
-9. Public methods
-10. Private methods
+1. Constructors
+2. Named constructors
+3. `const` fields
+4. Static methods
+5. `final` fields
+6. Mutable fields
+7. `initState`
+8. Private methods
+9. Overridden public methods
+10. `build`
 
 ### BLoC Member Ordering
 
-1. Final repository/service fields
-2. Constructor with `super.initialState` + `on<>` registrations
-3. Private fields (subscriptions)
-4. Event handlers (private, `_onEventName`)
-5. `close` override
+1. Public fields, then private dependency/subscription fields
+2. Public and private getters
+3. Constructor with `super.initialState` + `on<>` registrations
+4. Public methods, including `close`
+5. Event handlers and other private methods
 
 ## Type Safety
 
 - **Always** declare return types — never omit
 - **Always** use `final` for non-reassigned locals
 - **Always** use `const` for compile-time constants
+- **Always** declare `const` constructors for immutable classes and use `const`
+  invocations whenever every argument is compile-time constant.
 - **Never** use `var` when type is not obvious from the right side
 - **Never** use `dynamic` — use `Object` or `Object?`
 
@@ -143,14 +132,14 @@ class FeatureScope extends StatefulWidget {
   const FeatureScope({required this.child});
   final Widget child;
 
-  static FeatureBloc newBloc(BuildContext context) {
+  static FeatureBloc createBloc(BuildContext context) {
     final scope = context
         .getInheritedWidgetOfExactType<_InheritedFeatureScope>();
     if (scope == null) {
       throw StateError('FeatureScope not found in widget tree');
     }
 
-    return scope.newBloc();
+    return scope.blocFactory();
   }
   // ...
 }
@@ -161,7 +150,7 @@ class FeatureScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => BlocProvider<FeatureBloc>(
-    create: (_) => FeatureScope.newBloc(context),
+    create: (_) => FeatureScope.createBloc(context),
     child: const _FeatureView(),
   );
 }
@@ -175,11 +164,14 @@ class FeatureScope extends StatefulWidget {
   const FeatureScope({super.key, required this.child});
   final Widget child;
 
-  static FeatureBloc newBloc(BuildContext context) {
+  static FeatureBloc createBloc(BuildContext context) {
     final scope = context
         .getInheritedWidgetOfExactType<_InheritedFeatureScope>();
-    assert(scope != null, 'FeatureScope not found in widget tree');
-    return scope!._newBloc();
+    if (scope == null) {
+      throw StateError('FeatureScope not found in widget tree');
+    }
+
+    return scope.blocFactory();
   }
 
   @override
@@ -188,39 +180,36 @@ class FeatureScope extends StatefulWidget {
 
 // Level 2: State — wires dependencies from AppScope
 class _FeatureScopeState extends State<FeatureScope> {
-  late final FeatureRepository _featureRepository;
+  late final Factory<FeatureBloc> _blocFactory;
+  bool _initialized = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_initialized) return;
     _initialized = true;
-    _featureRepository = AppScope.of(context).featureRepository;
+
+    final deps = AppScope.of(context);
+    _blocFactory = () => FeatureBloc(
+      featureRepository: deps.featureRepository,
+    );
   }
-
-  bool _initialized = false;
-
-  FeatureBloc _newBloc() => FeatureBloc(
-        featureRepository: _featureRepository,
-      );
 
   @override
   Widget build(BuildContext context) => _InheritedFeatureScope(
-        newBloc: _newBloc,
-        child: widget.child,
-      );
+    blocFactory: _blocFactory,
+    child: widget.child,
+  );
 }
 
 // Level 3: InheritedWidget — exposes factory down the tree
 class _InheritedFeatureScope extends InheritedWidget {
   const _InheritedFeatureScope({
-    required this.newBloc,
+    required this.blocFactory,
     required super.child,
   });
 
-  final FeatureBloc Function() newBloc;
-
-  FeatureBloc _newBloc() => newBloc();
+  final Factory<FeatureBloc> blocFactory;
 
   @override
   bool updateShouldNotify(_InheritedFeatureScope old) => false;
@@ -254,7 +243,9 @@ Multi-method services keep explicit method names — `call` is reserved for sing
 3. `package:` third-party imports
 4. `package:` project imports (alphabetical)
 
-**Always** use `package:` imports, never relative imports.
+Production code under `lib/` always uses `package:` imports. Test code may use
+relative imports for test-only helpers and package-local `test/tool` internals
+that are not exposed through a package `lib/` API.
 
 ```dart
 // ❌
@@ -374,6 +365,30 @@ try {
 
 Never expose public fields or public methods on BLoC classes.
 All interaction happens through events. Expose only the `stream` and `state` that `flutter_bloc` provides via the base class.
+
+### BLoC Type And File Naming
+
+- Every concrete BLoC input ends with `Event`.
+- Every concrete one-shot UI output ends with `Action`.
+- Every BLoC state ends with `State`.
+- Use the classic aggregate layout per BLoC:
+  `feature_bloc.dart`, `feature_event.dart`, `feature_state.dart`, and
+  `feature_action.dart` when the BLoC exposes actions.
+- Keep all events for one BLoC in its single `*_event.dart` file, all states in
+  `*_state.dart`, and all actions in `*_action.dart`. Do not create
+  `events/` or `actions/` subdirectories.
+- UI-dispatched events are public. Platform callbacks and internal async
+  results are private library events.
+
+## BLoC Coordination
+
+- Do not read one BLoC's state to create another BLoC when both values can come from the same route argument or dependency.
+- Do not subscribe to another BLoC's stream. Subscribe to a shared source of truth or `AppEventBus`.
+- For shared state, subscribe in the BLoC constructor, dispatch an internal event such as `_SessionLockChanged`, and cancel in `close()`.
+- For one-time facts, subscribe to `AppEventBus`, filter by typed event, dispatch an internal event, and cancel in `close()`.
+- Use `BlocListener` only for UI effects in the same presentation subtree, not for BLoC-to-BLoC coordination.
+
+See [bloc-communication.md](./bloc-communication.md) for the full decision matrix.
 
 ## Test File Imports
 

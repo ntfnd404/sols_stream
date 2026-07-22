@@ -186,11 +186,94 @@ consume its public API and do not re-own the same concept.
 
 ---
 
+## Environment Matrix
+
+`APP_ENVIRONMENT` selects `local`, `dev`, or `prod`. Solana, wallet funding,
+viewer, and key-broker values form one validated configuration and must move
+together:
+
+| Environment | Solana RPC | Viewer URL | Key broker |
+|-------------|------------|------------|------------|
+| `local` | loopback Docker validator | loopback Dart Web client | `KEY_BROKER_MODE=local` |
+| `dev` | devnet HTTPS RPC | local Dart Web client | remote HTTPS |
+| `prod` | production HTTPS RPC | public HTTPS deployment | remote HTTPS |
+
+`RpcEnvironment` owns only the primary RPC.
+`WalletEnvironment` owns identity storage and one typed `WalletFundingConfig`.
+`KeyBrokerEnvironment` owns one typed `KeyBrokerConfig`; provider selection is
+explicit and is never inferred from a sentinel URI. Wallet identities use
+distinct storage records:
+
+- local: `sols_stream_wallet_local_v1`;
+- dev: `sols_stream_wallet_dev_v1`;
+- prod: `sols_stream_wallet_prod_v1`.
+
+Environment-specific identities were introduced before the first production
+deployment. The previous local/dev storage record is not migrated or deleted;
+local and dev receive a one-time identity change, and downgrade compatibility
+with older development builds is not provided.
+
+Funding selects one explicit mode:
+
+- local: confirmed balance with RPC airdrop;
+- dev: confirmed balance with ordered RPC-airdrop then HTTP-faucet sources;
+- prod: confirmed existing balance only.
+
+There are no nullable provider combinations. Production never invokes a
+funding source and cannot select the local key broker.
+Within `signaling_solana`, funded and reclaim broadcasts for one wallet share a
+FIFO coordinator. Funding checks execute inside the queued transaction
+operation; reclaim uses the same queue without invoking a funding source.
+`PeerInviteEnvironment` owns the invite base URL. The composition root injects
+it into the canonical `PeerSignaling` implementation; bounded-context packages
+contain no environment-specific URL constants.
+
+Developer web-server bind settings are not application environment. Make reads
+them from `config/tooling/local_web.env` and passes them to Flutter's standard
+`web-server` device. Local and devnet Web clients are same-host only. Public
+hosting, HTTPS deployment, and native Universal/App Links remain future work.
+
+## Application Runtime Ownership
+
+`AppBootstrap` performs process-global framework/SDK initialization and never
+stores runtime services or SDK handles. `AppDependenciesBuilder.build` creates
+module assemblies and the dependency graph. `AppDependencies` is the only
+application-lifetime instance holder.
+
+`AppScope` lives in `core/di`. It stores one `AppDependencies` reference,
+provides it to the widget tree, and closes it when removed. Replacing the
+application graph at runtime is rejected; process restart is the graph-change
+boundary. Feature scopes extract only the ports they need and pass those ports
+through constructors; widgets do not use `AppDependencies` as an arbitrary
+service locator.
+
+`AppResourceDisposalStack` registers module assemblies and app-level resources
+during composition, then disposes them once in reverse creation order. Every cleanup
+failure is preserved, reported, and rethrown as one aggregate exception.
+Disposal is lifecycle hygiene, not a guarantee when the operating system
+terminates the process.
+
+### Home URL Contract
+
+Session type and participant role are independent route values:
+
+- `/home?intent=p2p&role=publisher`
+- `/home?intent=p2p&role=viewer`
+- viewer invite adds `host` and `public`
+
+The decoder is strict. Legacy `joinRoom`/`p2pCall`, missing roles, duplicated
+`mode=p2p`, publisher URLs carrying viewer invite data, and the not-yet-defined
+`intent=stream` resolve to Not Found instead of silently changing application
+state.
+
+---
+
 ## Public API Standard
 
 Every package exposes:
-- One public barrel: `package:<name>/<name>.dart`
-- Optional DI entry point: `packages/<name>/lib/src/<name>_assembly.dart`
+- One primary public barrel: `package:<name>/<name>.dart`
+- Optional narrowly scoped public capability or assembly entry points under
+  `lib/`, such as `solana_signer.dart` or `solana_wallet_assembly.dart`
 
 Everything under `src/` is private implementation detail.
 
@@ -221,7 +304,7 @@ packages/<name>/
 
 Layer responsibilities:
 - `domain/` — what the business **is**
-- `application/` — what the business **does** (use cases) and what it **needs** (interfaces)
+- `application/` — what the business **does** (use cases, orchestration, ephemeral application services) and what it **needs** (interfaces)
 - `data/` — **how** it's done (implementations)
 
 Package boundaries answer "who owns this capability?"  
@@ -236,13 +319,20 @@ Layer boundaries answer "what kind of code is this?"
 Contains **only**:
 - `bloc/` — BLoC + State + Event + Action
 - `di/` — FeatureScope (DI wiring)
+- `model/` — presentation-level enums/value objects shared by the feature's BLoC and widgets
 - `view/` — screens (`view/<name>_screen.dart`) + widgets (`view/widgets/`)
+
+The root `app` feature may additionally own `routing/` and `lock/`, because
+those are app-shell presentation concerns rather than reusable business logic.
 
 Must **not** contain:
 - `domain/` or `data/` folders — those belong in `packages/`
 - Repository implementations
 - Domain entities or interfaces
 - Cross-package `src/` imports
+- Platform/runtime ownership such as WebRTC peer connections, HLS playback controllers,
+  cryptography, storage, or chain/RPC adapters. BLoCs orchestrate package APIs; they
+  do not own those runtimes.
 
 ### `lib/common/*`
 
@@ -253,13 +343,38 @@ is reusable beyond this app shell, promote it into a `packages/` package.
 
 ### `lib/core/*`
 
-Composition root, routing, config, event bus, and app-wide adapters owned by the app shell.
+Composition root, config, event bus, security helpers, app-wide BLoC observation,
+and app-wide adapters owned by the app shell. App routing currently belongs to
+the root `lib/feature/app/routing` presentation feature.
 
-Allowed subdirectories: `di/`, `routing/`, `event_bus/`, `adapters/`, `config/`, `bootstrap/`.
+Allowed subdirectories: `bloc/`, `bootstrap/`, `config/`, `di/`, `event_bus/`,
+and `security/`. Add a new core category only for a demonstrated app-wide
+responsibility.
+
+### BLoC Communication
+
+Independent BLoCs do not communicate directly. They coordinate through one of:
+
+- a shared state source when consumers need a current value and changes;
+- `AppEventBus` when consumers react to a one-time fact;
+- router/composition parameters when values are known at creation time;
+- an explicit coordinator when orchestration spans multiple readiness signals.
+
+State with a real data source belongs behind a repository/gateway contract.
+Ephemeral runtime state with no external source belongs in an application
+service/store owned by the relevant package or app shell. Facts belong on
+`AppEventBus`.
+
+See [bloc-communication.md](./bloc-communication.md) for the full decision matrix.
 
 ---
 
 ## Decision Triggers
+
+Delivery sequencing and deferred architectural work are tracked in
+[roadmap.md](./roadmap.md). Test-level ownership and the distinction between
+unit, integration, protocol E2E, and application E2E are defined in
+[testing-strategy.md](./testing-strategy.md).
 
 ### When to create a new package
 

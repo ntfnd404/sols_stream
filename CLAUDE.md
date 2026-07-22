@@ -45,6 +45,25 @@ The app is a single `StatefulWidget` (`_StreamMwpHomeState`) with two transport 
 
 **HLS mode** (`video_player`) — URL + optional Basic Auth or Bearer token. HLS is only supported on Android, iOS, macOS, and Web (`_hlsSupported` gate). Linux and Windows are not supported.
 
+## Code conventions
+
+### State management
+- Only `Bloc<Event, State>` — never `Cubit`. Every feature owns its own Bloc.
+- Each Bloc lives in `lib/feature/<name>/bloc/` (`*_bloc.dart`, `*_event.dart`, `*_state.dart`, `*_action.dart`).
+- Scoped DI via `*Scope` classes: `FooScope.create(BuildContext)` reads from `AppScope` and constructs the Bloc.
+- `EphemeralBlocMixin` for one-shot side effects (snackbars, navigation) — not stored in state.
+- Events are sealed classes. State is immutable with `copyWith()`.
+- Bloc never holds Flutter platform objects (`RTCVideoRenderer`, `TextEditingController`) — those stay in `StatefulWidget` and are wired via `BlocListener`.
+
+### Widget structure
+- No `_buildXxx()` helper methods that return `Widget` — extract into `StatelessWidget` / `StatefulWidget`.
+- Shared widgets → `lib/common/widgets/`, extensions → `lib/common/extensions/`.
+
+### Signaling / crypto
+- `PeerSignaling` is the only application port used by Web, mobile, and desktop.
+- `OnChainPeerSignaling` exchanges broker-protected SDP through Solana slots.
+- Platform-specific WebRTC remains isolated in `realtime_media`.
+
 ## Platform notes
 
 - `ios/Podfile` and `macos/Podfile` are committed (non-standard — CocoaPods managed)
