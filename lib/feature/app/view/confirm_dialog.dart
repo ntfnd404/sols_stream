@@ -17,10 +17,10 @@ class ConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-        content: Text(message),
-        actions: <Widget>[
-          TextButton(onPressed: onCancel, child: const Text('Cancel')),
-          FilledButton(onPressed: onConfirm, child: const Text('Confirm')),
-        ],
-      );
+    content: Text(message),
+    actions: <Widget>[
+      TextButton(onPressed: onCancel, child: const Text('Cancel')),
+      FilledButton(onPressed: onConfirm, child: const Text('Confirm')),
+    ],
+  );
 }

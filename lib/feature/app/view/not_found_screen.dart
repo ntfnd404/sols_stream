@@ -10,21 +10,21 @@ class NotFoundScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Not found')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const Icon(Icons.error_outline, size: 64),
-              const SizedBox(height: 16),
-              Text('No route for "$attempted"'),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: context.navigator.toHub,
-                child: const Text('Go to hub'),
-              ),
-            ],
+    appBar: AppBar(title: const Text('Not found')),
+    body: Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          const Icon(Icons.error_outline, size: 64),
+          const SizedBox(height: 16),
+          Text('No route for "$attempted"'),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: context.navigator.toHub,
+            child: const Text('Go to hub'),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }

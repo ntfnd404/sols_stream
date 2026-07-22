@@ -109,8 +109,7 @@ void main() {
           builder: AppTheme.builder,
           home: Builder(
             builder: (outer) {
-              final overridden =
-                  ColorTheme.of(outer).copyWith(bgCard: const Color(0xFF123456));
+              final overridden = ColorTheme.of(outer).copyWith(bgCard: const Color(0xFF123456));
 
               return ColorTheme(
                 data: overridden,
