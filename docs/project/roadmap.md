@@ -127,7 +127,7 @@ snapshot, and results remain in the owning ticket evidence directory.
   then DCM output is advisory and must be reviewed explicitly rather than
   reported as a passing hard gate.
 
-## Change log
+## Last 3 changes
 
 - 2026-07-20 — closed SS-0025 and registered Apple signing and Darwin
   dependency-manager gates SS-0026/SS-0027.
@@ -136,8 +136,3 @@ snapshot, and results remain in the owning ticket evidence directory.
 - 2026-07-18 — implemented SS-0013 provider-error sanitization, separated
   common and Web-specific release gates, and registered BL-005/BL-006
   architecture and quality-gate debt.
-- 2026-07-17 — promoted BL-001 to a production release gate and registered
-  BL-003 for the separately specified Web signaling payload security work.
-- 2026-07-16 — removed the unnecessary dev wallet migration plan, expanded
-  SS-0004 with production custody requirements, and registered BL-002 for fatal
-  bootstrap recovery UX.
