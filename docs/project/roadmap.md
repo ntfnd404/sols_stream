@@ -1,6 +1,6 @@
 # Project Roadmap
 
-Last reviewed: 2026-07-20
+Last reviewed: 2026-07-23
 
 ## Completed tickets
 
@@ -13,13 +13,13 @@ Last reviewed: 2026-07-20
 - SS-0025 — enforced the public Flutter dart-define boundary and sanitized
   configuration preflight. Evidence:
   [SS-0025 evidence](../evidence/SS-0025/evidence.md).
+- SS-0007 — shipped signaling parity, IDL/tooling cleanup, and the hosted
+  `rolter` migration (merged by PR #3 at `967db0d`).
+- SS-0008 — shipped TURN entitlement before room creation with the SS-0007
+  release (merged by PR #3 at `967db0d`).
 
 ## In-flight tickets
 
-- SS-0007 — signaling parity and closure cleanup. The `PeerSignaling` migration
-  is committed on `SS-0007-signaling-parity`; IDL/tooling closure remains.
-- SS-0008 — TURN entitlement before room creation. QA passed; shipment is
-  coupled to the current SS-0007 branch and must be reconciled at closure.
 
 ## Common blocking release gates
 
@@ -129,10 +129,9 @@ snapshot, and results remain in the owning ticket evidence directory.
 
 ## Last 3 changes
 
+- 2026-07-23 — shipped SS-0007 and SS-0008 together through PR #3
+  (`967db0d`), completing signaling parity and TURN-entitlement delivery.
 - 2026-07-20 — closed SS-0025 and registered Apple signing and Darwin
   dependency-manager gates SS-0026/SS-0027.
 - 2026-07-19 — closed SS-0013 against its verified source tree and made wallet
   address logging forbidden in every environment.
-- 2026-07-18 — implemented SS-0013 provider-error sanitization, separated
-  common and Web-specific release gates, and registered BL-005/BL-006
-  architecture and quality-gate debt.
