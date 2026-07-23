@@ -1,22 +1,60 @@
 name: sols_stream
-description: "A new Flutter project."
+description: "Flutter app for live streaming with Solana on-chain signaling."
 publish_to: 'none'
 version: 0.1.0+1
 
 environment:
-  sdk: ^3.12.0
+  sdk: ^3.12.2
+
+workspace:
+  - packages/secure_storage
+  - packages/signaling
+  - packages/signaling_solana
+  - packages/solana_wallet
+  - packages/realtime_media
+  - packages/streaming
+  - packages/ui_kit
 
 dependencies:
   flutter:
     sdk: flutter
-    
-  flutter_webrtc: ^1.4.1
-  video_player: ^2.11.1
+  flutter_web_plugins:
+    sdk: flutter
+
+  qr_flutter: 4.1.0
+  flutter_bloc: 9.1.1
+  solana: 0.32.0+1
+  meta: 1.18.0
+
+  # packages
+  ephemeral_bloc:
+    git:
+      url: https://github.com/ntfnd404/ephemeral_bloc
+      ref: v0.0.1
+  rolter: ^0.1.0
+  secure_storage:
+    path: packages/secure_storage
+  solana_wallet:
+    path: packages/solana_wallet
+  realtime_media:
+    path: packages/realtime_media
+  streaming:
+    path: packages/streaming
+  ui_kit:
+    path: packages/ui_kit
+  signaling:
+    path: packages/signaling
+  signaling_solana:
+    path: packages/signaling_solana
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+
+  analyzer: 12.1.0
+  bloc_test: 10.0.0
+  flutter_lints: 6.0.0
+  mocktail: 1.0.5
 
 flutter:
   uses-material-design: true

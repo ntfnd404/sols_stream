@@ -27,9 +27,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Camera is used for native WebRTC stream testing.</string>
+	<string>$(PRODUCT_NAME) uses the camera for peer-to-peer video calls.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone is used for native WebRTC stream testing.</string>
+	<string>$(PRODUCT_NAME) uses the microphone for peer-to-peer audio calls.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

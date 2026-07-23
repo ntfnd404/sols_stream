@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "dart": {
+      "command": "dart",
+      "args": ["mcp-server"]
+    },
+    "dcm": {
+      "command": "dcm",
+      "args": ["start-mcp-server", "--force-roots-fallback"]
+    }
+  }
+}

@@ -1,0 +1,1 @@
+enum WebRtcRole { publisher, viewer }

@@ -37,7 +37,16 @@ Session brief -- execution packet only. Do not repeat full architecture rational
 
 ## Constraints
 
-- <!-- Rules from conventions, plan, or lane -->
+<!--
+Mandatory: name every OOP, SOLID, GRASP, GoF, DRY, DDD, and TDD principle or
+pattern that applies so the Implementer does not reinvent them. "See conventions"
+is not enough — name the pattern and where it applies in this phase specifically.
+-->
+
+- <!-- e.g. Strategy (GoF) + DIP: XxxService → XxxPort interface, not concrete Timer -->
+- <!-- e.g. Null Object (GoF): NoOpXxx as the default dependency in the constructor -->
+- <!-- e.g. SRP: one class per concern; name the split -->
+- <!-- e.g. TDD: write failing test before each checklist task -->
 
 ---
 

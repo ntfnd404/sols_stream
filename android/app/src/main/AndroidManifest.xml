@@ -4,10 +4,14 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 
+    <!-- allowBackup=false: prevents cloud/device-transfer backup of the
+         flutter_secure_storage keystore, which would otherwise cause
+         "InvalidKeyException: Failed to unwrap key" after restore. -->
     <application
         android:label="sols_stream"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"

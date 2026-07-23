@@ -1,0 +1,42 @@
+# Compiles solana-test-validator for linux/arm64 from Agave source.
+# Build time: ~45 min (cold). Result: solana-local:arm64.
+# Usage: make node-build-arm64
+
+FROM rust:1.81-bookworm AS builder
+
+# Pin both the release name and its expected commit. A moved tag fails the build.
+ARG AGAVE_VERSION=v2.1.21
+ARG AGAVE_COMMIT=8a085eebcb901b6846d1f82f4636667742146545
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential pkg-config libssl-dev libudev-dev zlib1g-dev \
+    clang cmake lld llvm libprotobuf-dev protobuf-compiler git curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN git clone --depth 1 --branch "${AGAVE_VERSION}" \
+    https://github.com/anza-xyz/agave.git . \
+    && test "$(git rev-parse HEAD)" = "${AGAVE_COMMIT}"
+
+# Build only the validator binary declared by the pinned Agave workspace.
+RUN cargo build --release --locked --bin solana-test-validator
+
+# ── Runtime image ─────────────────────────────────────────────────────────────
+FROM debian:bookworm-slim
+
+ARG AGAVE_VERSION=v2.1.21
+ARG AGAVE_COMMIT=8a085eebcb901b6846d1f82f4636667742146545
+
+LABEL org.opencontainers.image.source="https://github.com/anza-xyz/agave" \
+      org.opencontainers.image.version="${AGAVE_VERSION}" \
+      org.opencontainers.image.revision="${AGAVE_COMMIT}"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bzip2 libssl3 libudev1 ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/target/release/solana-test-validator /usr/local/bin/
+
+EXPOSE 8899 8900
+
+ENTRYPOINT ["solana-test-validator"]

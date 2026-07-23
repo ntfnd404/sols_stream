@@ -1,0 +1,22 @@
+name: solana_wallet
+description: Solana wallet identity, persistence, balance, and funding adapters.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.12.2
+
+resolution: workspace
+
+dependencies:
+  http: 1.6.0
+  meta: 1.18.0
+  solana: 0.32.0+1
+
+  # packages
+  secure_storage:
+    path: ../secure_storage
+
+dev_dependencies:
+  test: 1.31.0
+  mocktail: 1.0.5
