@@ -31,10 +31,7 @@ dependencies:
     git:
       url: https://github.com/ntfnd404/ephemeral_bloc
       ref: v0.0.1
-  rolter:
-    git:
-      url: https://github.com/ntfnd404/rolter
-      ref: v0.0.1
+  rolter: ^0.1.0
   secure_storage:
     path: packages/secure_storage
   solana_wallet:

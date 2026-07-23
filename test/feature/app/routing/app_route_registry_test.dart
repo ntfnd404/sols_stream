@@ -155,7 +155,7 @@ void main() {
     addTearDown(state.dispose);
 
     navigator.syncHomeRole(WebRtcRole.publisher);
-    await state.queue.processingCompleted;
+    await state.processingCompleted;
 
     expect(
       state.top,
@@ -170,7 +170,7 @@ void main() {
     );
 
     navigator.syncHomeRole(WebRtcRole.viewer);
-    await state.queue.processingCompleted;
+    await state.processingCompleted;
 
     expect(
       state.top,

@@ -716,12 +716,11 @@ packages:
   rolter:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "v0.0.1"
-      resolved-ref: "5a1ac0260d3b39cb351b64574bd069d2c44f37bf"
-      url: "https://github.com/ntfnd404/rolter"
-    source: git
-    version: "0.0.1"
+      name: rolter
+      sha256: "636ce4233bc2f381f155d5bab206229451dca0e31e79498474d8bf596c2baa12"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   shelf:
     dependency: transitive
     description:
